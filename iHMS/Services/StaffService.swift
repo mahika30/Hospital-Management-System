@@ -32,8 +32,6 @@ final class StaffService {
         return response
     }
     
-    /// Creates default time slots for a staff member for a specific date
-    /// Creates 1-hour slots from 9 AM to 5 PM
     func createDefaultTimeSlotsForDate(staffId: UUID, date: Date, capacity: Int = 5) async throws {
         struct TimeSlotInsert: Encodable {
             let staff_id: String
@@ -48,7 +46,6 @@ final class StaffService {
         let dateString = formatDateForInsert(date)
         var slots: [TimeSlotInsert] = []
         
-        // Create 1-hour slots from 9 AM to 5 PM (9:00-10:00, 10:00-11:00, ..., 16:00-17:00)
         for hour in 9...16 {
             let startTime = String(format: "%02d:00:00", hour)
             let endTime = String(format: "%02d:00:00", hour + 1)
@@ -64,7 +61,6 @@ final class StaffService {
             ))
         }
         
-        // Insert all slots
         try await supabase
             .from("time_slots")
             .insert(slots)
@@ -73,7 +69,6 @@ final class StaffService {
         print("✅ Created \(slots.count) default time slots for staff \(staffId) on \(dateString)")
     }
     
-    /// Generates slots for a date range
     func createTimeSlotsForDateRange(staffId: UUID, startDate: Date, endDate: Date, capacity: Int = 5, weekdaysOnly: Bool = false) async throws {
         let calendar = Calendar.current
         var currentDate = startDate
@@ -81,7 +76,6 @@ final class StaffService {
         while currentDate <= endDate {
             let weekday = calendar.component(.weekday, from: currentDate)
             
-            // Skip weekends if weekdaysOnly is true
             if weekdaysOnly && (weekday == 1 || weekday == 7) {
                 currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
                 continue

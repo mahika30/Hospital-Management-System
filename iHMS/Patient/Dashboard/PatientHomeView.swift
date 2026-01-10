@@ -298,7 +298,6 @@ struct PatientDashboardView: View {
         }
     }
 
-    // MARK: - QR Overlay
     private var qrOverlay: some View {
         ZStack {
             Color.black.opacity(0.75)
@@ -313,7 +312,6 @@ struct PatientDashboardView: View {
         }
     }
 
-    // MARK: - Helpers
     private func infoPill(_ title: String, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(title)

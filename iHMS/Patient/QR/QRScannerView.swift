@@ -38,11 +38,9 @@ struct QRScannerView: UIViewControllerRepresentable {
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = .resizeAspectFill
 
-        // 🔑 IMPORTANT: use controller.view.bounds
         previewLayer.frame = controller.view.bounds
         controller.view.layer.addSublayer(previewLayer)
 
-        // 🔹 Overlay (CENTERED)
         let overlay = ScannerOverlayView()
         overlay.translatesAutoresizingMaskIntoConstraints = false
         overlay.backgroundColor = .clear

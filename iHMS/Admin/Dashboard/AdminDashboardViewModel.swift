@@ -114,8 +114,6 @@ class AdminDashboardViewModel: ObservableObject {
     }
     
     func updateAnalytics(range: DateRange) {
-        // In a real app, this would fetch specific data.
-        // For mock, just re-randomize to show "update" effect.
         generateAnalyticsData()
     }
 }

@@ -193,8 +193,6 @@ struct PatientProfileView: View {
             .cornerRadius(12)
     }
 
-    // MARK: - LOGIC
-
     private func loadInitialValues() {
         fullName = viewModel.patient?.fullName ?? ""
         phoneNumber = viewModel.patient?.phoneNumber ?? ""

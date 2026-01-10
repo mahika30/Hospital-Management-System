@@ -11,8 +11,6 @@ import Supabase
 
 @Observable
 class AvailabilityViewModel {
-
-    // MARK: - State
     var staff: Staff
     var isLoading = false
     var errorMessage: String?
@@ -20,7 +18,6 @@ class AvailabilityViewModel {
     var selectedDate: Date = Date()
     var timeSlots: [TimeSlot] = []
 
-    // MARK: - Slot Grouping
 
     var morningSlots: [TimeSlot] {
         timeSlots.filter { $0.hour >= 6 && $0.hour < 12 }
@@ -46,7 +43,6 @@ class AvailabilityViewModel {
         self.staff = staff
     }
 
-    // MARK: - Helpers
 
     private func formatDateForQuery(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -61,9 +57,6 @@ class AvailabilityViewModel {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: dateString)
     }
-
-    // MARK: - Load Slots
-
     func loadTimeSlots() async {
         isLoading = true
         errorMessage = nil
@@ -90,17 +83,16 @@ class AvailabilityViewModel {
                 .value
 
             timeSlots = response
-            print("✅ Loaded \(response.count) slots")
+            
 
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ Failed to load slots:", error)
+            
         }
 
         isLoading = false
     }
 
-    // MARK: - Auto Slot Generation (FIXED)
 
     private func autoGenerateSlotsIfNeeded(staffId: UUID) async {
         do {
@@ -131,21 +123,16 @@ class AvailabilityViewModel {
                         to: lastSlotDate
                     ) ?? today
 
-                    print("⚠️ Low slots, generating more…")
                     await enableWeekdays(startDate: startDate, weeks: 2)
                 }
 
             } else {
-                print("⚠️ No slots found, generating initial set")
                 await enableWeekdays(startDate: today, weeks: 2)
             }
 
         } catch {
-            print("❌ Auto-generation failed:", error)
         }
     }
-
-    // MARK: - Slot Actions
 
     func toggleSlot(_ slot: TimeSlot, isAvailable: Bool) async {
         struct Payload: Encodable { let is_available: Bool }
@@ -217,8 +204,6 @@ class AvailabilityViewModel {
         }
     }
     
-    // MARK: - NEW: Delay Adjuster
-    
     func adjustDelay(_ slot: TimeSlot, by minutes: Int) async {
         let newDelay = max(0, slot.delayMinutes + minutes)
         
@@ -239,9 +224,6 @@ class AvailabilityViewModel {
             errorMessage = error.localizedDescription
         }
     }
-    
-    // MARK: - NEW: Disable All Slots
-    
     func disableAllSlots() async {
         struct Payload: Encodable { let is_available: Bool }
         
@@ -261,8 +243,6 @@ class AvailabilityViewModel {
             errorMessage = error.localizedDescription
         }
     }
-
-    // MARK: - Slot Generation
 
     func generateSlotsForDate() async {
         guard let staffId = try? await supabase.auth.session.user.id else { return }
@@ -288,8 +268,6 @@ class AvailabilityViewModel {
     func enableWeekdays(startDate: Date, weeks: Int) async {
         await generateSlotsForDateRange(startDate: startDate, weeks: weeks, weekdaysOnly: true)
     }
-    
-    // MARK: - NEW: Enable Weekend
     
     func enableWeekend(startDate: Date, weeks: Int) async {
         await generateSlotsForDateRange(startDate: startDate, weeks: weeks, weekdaysOnly: false, weekendOnly: true)

@@ -54,8 +54,7 @@ final class PatientSearchViewModel {
             }
         }
     }
-    
-    // MARK: - Computed Properties
+
     var totalCount: Int {
         patients.count
     }
@@ -64,14 +63,13 @@ final class PatientSearchViewModel {
         !searchQuery.isEmpty || selectedTimeline != .all
     }
     
-    // MARK: - Initialization
+
     init() {
         Task {
             await loadPatients()
         }
     }
     
-    // MARK: - Public Methods
     func loadPatients() async {
         isLoading = true
         errorMessage = nil
@@ -86,25 +84,22 @@ final class PatientSearchViewModel {
             
             print("🔍 Loading patients from appointments for doctor: \(staffId)")
             
-            // Fetch appointments for this doctor
+        
             let appointments: [Appointment] = try await SupabaseManager.shared.client
                 .from("appointments")
                 .select()
                 .eq("staff_id", value: staffId.uuidString)
                 .execute()
                 .value
+
             
-            print("✅ Found \(appointments.count) appointments")
-            
-            // Store appointments for filtering
+    
             self.appointments = appointments
             
-            // Get unique patient IDs from appointments
+
             let patientIds = Array(Set(appointments.map { $0.patientId }))
             
-            print("🔍 Fetching details for \(patientIds.count) unique patients")
-            
-            // Fetch patient details for those patient IDs
+
             if patientIds.isEmpty {
                 patients = []
                 filterPatients()
@@ -120,12 +115,11 @@ final class PatientSearchViewModel {
                 .execute()
                 .value
             
-            print("✅ Loaded \(response.count) patient records")
+          
             patients = response
             filterPatients()
         } catch {
             errorMessage = "Failed to load patients: \(error.localizedDescription)"
-            print("❌ Error loading patients: \(error)")
         }
         
         isLoading = false
@@ -137,15 +131,14 @@ final class PatientSearchViewModel {
     
     func filterPatients() {
         var result = patients
-        
-        // Apply search query
+
         if !searchQuery.isEmpty {
             result = result.filter { patient in
                 patient.fullSearchText.localizedCaseInsensitiveContains(searchQuery)
             }
         }
         
-        // Apply timeline filter
+
         let calendar = Calendar.current
         let now = Date()
         
@@ -175,7 +168,6 @@ final class PatientSearchViewModel {
             }
         }
         
-        // Apply sorting
         result.sort { patient1, patient2 in
             switch selectedSortOption {
             case .nameAsc:
@@ -215,7 +207,6 @@ final class PatientSearchViewModel {
             filterPatients()
         } catch {
             errorMessage = "Failed to delete patient: \(error.localizedDescription)"
-            print("❌ Error deleting patient: \(error)")
         }
     }
     
@@ -254,7 +245,6 @@ final class PatientSearchViewModel {
             filterPatients()
         } catch {
             errorMessage = "Failed to update patient: \(error.localizedDescription)"
-            print("❌ Error updating patient: \(error)")
         }
     }
     
@@ -327,7 +317,6 @@ final class PatientSearchViewModel {
             filterPatients()
         } catch {
             errorMessage = "Failed to add patient: \(error.localizedDescription)"
-            print("❌ Error adding patient: \(error)")
         }
     }
     
@@ -353,7 +342,7 @@ final class PatientSearchViewModel {
             
             return response
         } catch {
-            print("❌ Error loading patient appointments: \(error)")
+           
             return []
         }
     }

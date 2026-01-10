@@ -8,15 +8,13 @@ struct PatientSearchView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Main Content
             ScrollView {
                 VStack(spacing: 20) {
-                    // Stats Cards
                     StatsSection(viewModel: viewModel)
                         .padding(.horizontal)
                         .padding(.top, 8)
                     
-                    // Timeline Filter
+
                     TimelineFilterSection(viewModel: viewModel)
                         .padding(.horizontal)
                     

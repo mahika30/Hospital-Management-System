@@ -152,7 +152,6 @@ struct EmergencyCancellationDialog: View {
                         )
                 )
             
-            // Reason Selection
             VStack(alignment: .leading, spacing: 12) {
                 Text("Cancellation Reason")
                     .font(.system(.subheadline, design: .rounded))

@@ -71,7 +71,6 @@ struct AdminStaffTab: View {
             .padding(.horizontal)
             .padding(.top, 4)
 
-            // MARK: Active Filter Chip
             if let dept = selectedDepartment {
                 Text("Filtered by \(dept.capitalized)")
                     .font(.caption)
@@ -83,7 +82,6 @@ struct AdminStaffTab: View {
                     .padding(.horizontal)
             }
 
-            // MARK: List
             List {
 
                 if isLoading {

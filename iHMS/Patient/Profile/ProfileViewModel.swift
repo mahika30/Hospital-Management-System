@@ -12,15 +12,11 @@ import SwiftUI
 @MainActor
 final class PatientViewModel: ObservableObject {
 
-    // MARK: - Published State
     @Published var patient: Patient?
     @Published var appointments: [Appointment] = []
 
-    // MARK: - Services
     private let patientService = PatientService()
     private let appointmentService = AppointmentService()
-
-    // MARK: - Dashboard Loader (Patient + Appointments)
     func loadDashboardData(authVM: AuthViewModel) async {
         guard let userId = await authVM.currentUserId() else { return }
 
@@ -31,7 +27,7 @@ final class PatientViewModel: ObservableObject {
             self.patient = try await patientTask
             self.appointments = try await appointmentsTask
         } catch {
-            print("❌ Failed to load dashboard data:", error)
+            print("Failed to load dashboard data:", error)
         }
     }
 
