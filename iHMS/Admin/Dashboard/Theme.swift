@@ -6,6 +6,7 @@ struct Theme {
     static let primaryText = Color.white
     static let secondaryText = Color(hex: "8E8E93")
     static let accent = Color.blue 
+    static let cardBackground = Color(hex: "1C1C1E") // Dark Charcoal
     static let gridLine = Color(hex: "3A3A3C")
     
     static let cornerRadius: CGFloat = 16

@@ -2,16 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>iHMS.xcscheme_^#shared#^_</key>
 		<dict>
-			<key>CFBundleURLName</key>
-			<string>ihms</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>ihms</string>
-			</array>
+			<key>orderHint</key>
+			<integer>0</integer>
 		</dict>
-	</array>
+	</dict>
 </dict>
 </plist>

@@ -53,12 +53,18 @@ struct AnalyticsView: View {
          
             TabView(selection: $selectedTab) {
                 AnalyticsChartCard(title: "Revenue", data: viewModel.revenueData, color: .white, isCurrency: true)
+                    .comingSoon()
+                    .padding(.horizontal) // Padding needed here since comingSoon clips bounds, and original had padding inside card or outside. Let's check AnalyticsChartCard padding.
                     .tag(0)
                 
                 AnalyticsChartCard(title: "Footfall", data: viewModel.footfallData, color: .white, isCurrency: false)
+                    .comingSoon()
+                    .padding(.horizontal)
                     .tag(1)
                 
                 AnalyticsChartCard(title: "Appointments", data: viewModel.revenueData, color: .white, isCurrency: false) // Reusing mock data for demo
+                    .comingSoon()
+                    .padding(.horizontal)
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
@@ -131,6 +137,5 @@ struct AnalyticsChartCard: View {
         .padding(20)
         .background(Theme.surface)
         .cornerRadius(Theme.cornerRadius)
-        .padding(.horizontal)
     }
 }
