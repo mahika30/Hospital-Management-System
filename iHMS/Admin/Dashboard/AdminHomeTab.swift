@@ -3,7 +3,6 @@ import SwiftUI
 struct AdminHomeTab: View {
 
     @StateObject private var dashboardVM = AdminDashboardViewModel()
-
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
@@ -15,7 +14,7 @@ struct AdminHomeTab: View {
                 LazyVGrid(columns: gridColumns, spacing: 16) {
                     SummaryCard(
                         title: "Patients",
-                        count: 1240,
+                        count: dashboardVM.patientsCount,
                         iconName: "person.2.fill",
                         accent: .blue,
                         deltaText: "+12%"
@@ -23,7 +22,7 @@ struct AdminHomeTab: View {
 
                     SummaryCard(
                         title: "Appointments",
-                        count: 320,
+                        count: dashboardVM.appointmentsCount,
                         iconName: "calendar.badge.clock",
                         accent: .green,
                         deltaText: "+8%"
@@ -41,6 +40,13 @@ struct AdminHomeTab: View {
             .padding(.vertical)
         }
         .background(Theme.background)
+        .refreshable {
+            await dashboardVM.fetchDashboardStats()
+        }
+        .task {
+            // Fetch real data when the tab appears
+            await dashboardVM.fetchDashboardStats()
+        }
     }
 
     private var feedbackSection: some View {
@@ -48,24 +54,46 @@ struct AdminHomeTab: View {
 
             HStack {
                 Text("Patient Feedback")
-                    .font(.headline)
+                    .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(Theme.primaryText)
 
                 Spacer()
+            }
 
-                NavigationLink {
-                    FeedbackListView(feedbacks: dashboardVM.recentFeedbacks)
-                } label: {
-                    Text("View All")
-                        .font(.subheadline)
-                        .foregroundColor(Theme.accent)
+            VStack(spacing: 12) {
+                ForEach(Array(dashboardVM.recentFeedbacks.prefix(3))) { item in
+                    FeedbackCardView(item: item)
                 }
             }
-
-            ForEach(Array(dashboardVM.recentFeedbacks.prefix(3))) { item in
-                FeedbackCardView(item: item)
-            }
+            .comingSoon() // Apply Coming Soon overlay only to the content
         }
         .padding(.horizontal)
+    }
+}
+
+// MARK: - Coming Soon Overlay
+struct ComingSoonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        ZStack {
+            content
+                .blur(radius: 10) // Direct blur on the content
+                .allowsHitTesting(false) // Disable interaction with the blurred content
+            
+            Text("COMING SOON")
+                .font(.title3)
+                .fontWeight(.bold)
+                .tracking(4) // Wide letter spacing
+                .foregroundColor(Theme.primaryText)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius))
+    }
+}
+
+extension View {
+    func comingSoon() -> some View {
+        modifier(ComingSoonModifier())
     }
 }

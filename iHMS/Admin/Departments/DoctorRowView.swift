@@ -31,8 +31,7 @@ struct DoctorRowView: View {
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
+
         }
         .padding(.vertical, 10)
     }

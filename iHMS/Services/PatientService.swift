@@ -100,4 +100,13 @@ final class PatientService {
     }
 
 
+    func fetchTotalPatients() async throws -> Int {
+        let count = try await client
+            .from("patients")
+            .select("*", head: true, count: .exact)
+            .execute()
+            .count
+        
+        return count ?? 0
+    }
 }

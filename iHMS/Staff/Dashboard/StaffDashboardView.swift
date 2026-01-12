@@ -16,7 +16,11 @@ struct StaffDashboardView: View {
         } else if let staff = staff {
             TabView(selection: $selectedTab) {
                 NavigationStack {
-                    DashboardHomeView(staff: staff, authVM: authVM)
+                    DashboardHomeView(
+                        staff: staff,
+                        authVM: authVM,
+                        onRefresh: loadStaffData
+                    )
                 }
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
@@ -66,13 +70,15 @@ struct StaffDashboardView: View {
     }
 }
 
-private struct DashboardHomeView: View {
+struct DashboardHomeView: View {
     let staff: Staff
     let authVM: AuthViewModel
+    let onRefresh: () async -> Void
     
     @State private var admittedCount = 0
     @State private var todayAppointments = 0
     @State private var isLoadingStats = false
+    @State private var showProfile = false
     
     var body: some View {
         ScrollView {
@@ -92,28 +98,30 @@ private struct DashboardHomeView: View {
                 QuickActionsSection(staff: staff)
                     .padding(.horizontal)
                 
-                // Logout Button
-                Button(role: .destructive) {
-                    Task {
-                        await authVM.signOut()
-                    }
-                } label: {
-                    Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                .buttonStyle(.bordered)
-                .padding(.horizontal)
-                .padding(.top, 20)
             }
             .padding(.vertical)
         }
         .navigationTitle("Dashboard")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showProfile = true
+                } label: {
+                    Image(systemName: "person.crop.circle")
+                }
+            }
+        }
+        .navigationDestination(isPresented: $showProfile) {
+            StaffProfileView(staff: staff, isOwner: true)
+        }
         .task {
+            // Reload stats AND parent staff data when view appears
             await loadStats()
+            await onRefresh()
         }
         .refreshable {
             await loadStats()
+            await onRefresh()
         }
     }
     
