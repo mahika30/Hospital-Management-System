@@ -74,33 +74,6 @@ struct AdminSettingsTab: View {
                         }
                     }
                     
-                    // Address
-                    EditableInfoSection(
-                        title: "Address",
-                        isEditing: $profileVM.isEditingAddress,
-                        onSave: profileVM.saveAddress
-                    ) {
-                        // Read Mode
-                        VStack(spacing: 12) {
-                            InfoRowView(label: "Country", value: profileVM.country)
-                            
-                            HStack(spacing: 16) {
-                                InfoRowView(label: "City", value: profileVM.city)
-                                InfoRowView(label: "Postal Code", value: profileVM.postalCode)
-                            }
-                        }
-                    } editContent: {
-                        // Edit Mode
-                        VStack(spacing: 12) {
-                            CustomTextField(title: "Country", text: $profileVM.country)
-                            
-                            HStack(spacing: 16) {
-                                CustomTextField(title: "City", text: $profileVM.city)
-                                CustomTextField(title: "Postal Code", text: $profileVM.postalCode)
-                            }
-                        }
-                    }
-                    
                     // Logout Section
                     Button(role: .destructive) {
                         Task {

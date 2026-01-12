@@ -134,12 +134,20 @@ struct PatientDashboardView: View {
     @State private var showingProfile = false
     @State private var showQROverlay = false
     @State private var navigateToDoctorList = false
+    @State private var navigateToPastAppointments = false
 
     var body: some View {
         NavigationStack {
             NavigationLink(
                 destination: DoctorListView(),
                 isActive: $navigateToDoctorList
+            ) {
+                EmptyView()
+            }
+            
+            NavigationLink(
+                destination: PastAppointmentsView(patientId: viewModel.patient?.id ?? UUID()),
+                isActive: $navigateToPastAppointments
             ) {
                 EmptyView()
             }
@@ -277,6 +285,15 @@ struct PatientDashboardView: View {
                 }
 
 
+                QuickActionCard(
+                    icon: "clock.arrow.circlepath",
+                    title: "Past Appointments",
+                    subtitle: "View appointment history",
+                    tint: .orange
+                ){
+                    navigateToPastAppointments = true
+                }
+                
                 QuickActionCard(
                     icon: "doc.text.fill",
                     title: "Medical Records",

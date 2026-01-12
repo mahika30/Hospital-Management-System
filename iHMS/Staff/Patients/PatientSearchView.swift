@@ -24,61 +24,15 @@ struct PatientSearchView: View {
                         selectedPatient: $selectedPatient
                     )
                     .padding(.horizontal)
-                    .padding(.bottom, 80) // Space for bottom search bar
                 }
                 .padding(.vertical)
             }
             .refreshable {
                 await viewModel.refreshPatients()
             }
-            
-            // Glass-like Floating Search Bar (iOS 26 style)
-            HStack(spacing: 12) {
-                // Search Bar
-                HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 17, weight: .medium))
-                    
-                    TextField("Search", text: $viewModel.searchQuery)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 17))
-                    
-                    if !viewModel.searchQuery.isEmpty {
-                        Button {
-                            viewModel.searchQuery = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                                .font(.system(size: 16))
-                        }
-                    } else {
-                        Image(systemName: "mic.fill")
-                            .foregroundStyle(.secondary)
-                            .font(.system(size: 17))
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 11)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color(.separator).opacity(0.3), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .ignoresSafeArea(edges: .bottom)
-            )
         }
         .navigationTitle("Patient Records")
+        .searchable(text: $viewModel.searchQuery, prompt: "Search patients")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

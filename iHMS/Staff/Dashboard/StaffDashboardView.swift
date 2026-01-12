@@ -128,16 +128,26 @@ struct DashboardHomeView: View {
     private func loadStats() async {
         isLoadingStats = true
         do {
-            let patientsResponse: [Patient] = try await SupabaseManager.shared.client
-                .from("patients")
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+            
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withFullDate]
+            
+            let completedResponse: [Appointment] = try await SupabaseManager.shared.client
+                .from("appointments")
                 .select()
-                .eq("assigned_doctor_id", value: staff.id.uuidString)
+                .eq("staff_id", value: staff.id.uuidString)
+                .gte("appointment_date", value: dateFormatter.string(from: today))
+                .lt("appointment_date", value: dateFormatter.string(from: tomorrow))
+                .eq("status", value: "completed")
                 .execute()
                 .value
             
-            admittedCount = patientsResponse.count
+            admittedCount = completedResponse.count
         } catch {
-            print("Error loading my patients count: \(error)")
+            print("Error loading completed appointments count: \(error)")
         }
         do {
             let calendar = Calendar.current
@@ -297,10 +307,10 @@ private struct QuickStatsSection: View {
                     )
                     
                     StatCard(
-                        title: "My Patients",
+                        title: "Completed Today",
                         value: "\(admittedCount)",
-                        icon: "person.3.fill",
-                        color: .purple
+                        icon: "checkmark.circle.fill",
+                        color: .green
                     )
                 }
             }
@@ -369,6 +379,18 @@ private struct QuickActionsSection: View {
                         subtitle: "Search and view patient information",
                         icon: "person.text.rectangle",
                         color: .green
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                NavigationLink {
+                    CompletedAppointmentsView(staffId: staff.id)
+                } label: {
+                    ActionCard(
+                        title: "Completed Appointments",
+                        subtitle: "View your appointment history",
+                        icon: "checkmark.circle.fill",
+                        color: .purple
                     )
                 }
                 .buttonStyle(.plain)
