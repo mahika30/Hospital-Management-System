@@ -40,10 +40,9 @@ struct BookAppointmentView: View {
         }
         .navigationTitle("Book Appointment")
         .navigationBarTitleDisplayMode(.large)
-        .confirmationDialog(
+        .alert(
             "Confirm Appointment",
-            isPresented: $showConfirm,
-            titleVisibility: .visible
+            isPresented: $showConfirm
         ) {
             Button("Confirm") {
                 Task {
