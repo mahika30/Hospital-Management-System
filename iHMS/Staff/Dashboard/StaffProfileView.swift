@@ -127,25 +127,6 @@ struct StaffProfileView: View {
                     }
                 }
                 
-                // Address (Mocked for UI consistency)
-                EditableInfoSection(
-                    title: "Address",
-                    isEditing: $viewModel.isEditingAddress,
-                    onSave: viewModel.saveAddress
-                ) {
-                    // Read Mode
-                    VStack(spacing: 12) {
-                        InfoRowView(label: "Country", value: viewModel.country)
-                        InfoRowView(label: "City", value: viewModel.city)
-                    }
-                } editContent: {
-                    // Edit Mode
-                    VStack(spacing: 12) {
-                        CustomTextField(title: "Country", text: $viewModel.country)
-                        CustomTextField(title: "City", text: $viewModel.city)
-                    }
-                }
-                
                 // Logout Section (Only if Owner)
                 if isOwner {
                     Button(role: .destructive) {

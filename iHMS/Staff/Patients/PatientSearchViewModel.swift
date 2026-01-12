@@ -326,13 +326,16 @@ final class PatientSearchViewModel {
                 .from("appointments")
                 .select("""
                     *,
-                    time_slots(
+                    time_slots:time_slot_id(
                         start_time,
                         end_time,
                         slot_date
                     ),
-                    staff(
-                        full_name
+                    staff:staff_id(
+                        id,
+                        full_name,
+                        designation,
+                        specialization
                     )
                 """)
                 .eq("patient_id", value: patientId.uuidString)
@@ -342,16 +345,24 @@ final class PatientSearchViewModel {
             
             return response
         } catch {
-           
+            print("❌ Error loading patient appointments: \(error)")
             return []
         }
     }
     
     // MARK: - Helper Methods
     private func parseAppointmentDate(_ dateString: String) -> Date {
+        // Try ISO8601 format first (with time)
+        let isoFormatter = ISO8601DateFormatter()
+        if let date = isoFormatter.date(from: dateString) {
+            return date
+        }
+        
+        // Fallback to date-only format
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.date(from: dateString) ?? Date()
     }
 }

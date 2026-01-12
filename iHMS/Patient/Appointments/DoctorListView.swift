@@ -55,12 +55,9 @@ struct DoctorListView: View {
                             Text(doctor.fullName)
                                 .font(.headline)
 
-                            if let designation = doctor.designation {
-                                Text(designation)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
-
+                            Text(doctor.designation ?? "Doctor")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
                         }
                     }
                     .padding(.vertical, 6)
