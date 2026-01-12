@@ -63,6 +63,13 @@ struct AdminDashboardView: View {
                 AdminSettingsTab()
                     .environmentObject(authVM)
             }
+            .onChange(of: showProfileSheet) { newValue in
+                if !newValue {
+                    Task {
+                        currentUserName = await authVM.currentUserName()
+                    }
+                }
+            }
             .sheet(isPresented: $showAddStaffSheet) {
                 AddStaffView()
             }

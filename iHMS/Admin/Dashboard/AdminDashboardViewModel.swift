@@ -45,6 +45,11 @@ struct FeedbackItem: Identifiable {
 class AdminDashboardViewModel: ObservableObject {
     @Published var doctorsCount: Int = 0
     @Published var patientsCount: Int = 0
+    @Published var appointmentsCount: Int = 0
+    
+    // Services
+    private let patientService = PatientService()
+    private let appointmentService = AppointmentService()
     
     // Analytics
     @Published var selectedDateRange: DateRange = .week
@@ -57,12 +62,30 @@ class AdminDashboardViewModel: ObservableObject {
     @Published var allFeedbacks: [FeedbackItem] = []
     
     init() {
-        loadMockData()
+        Task {
+            await fetchDashboardStats()
+        }
+        loadMockAnalytics() // Keep analytics mock for now as per instructions (only asked for total numbers)
     }
     
-    func loadMockData() {
-        doctorsCount = 42
-        patientsCount = 1250
+    func fetchDashboardStats() async {
+        do {
+            async let patients = patientService.fetchTotalPatients()
+            async let appointments = appointmentService.fetchTotalAppointments()
+            
+            let (pCount, aCount) = try await (patients, appointments)
+            
+            await MainActor.run {
+                self.patientsCount = pCount
+                self.appointmentsCount = aCount
+            }
+        } catch {
+            print("Error fetching dashboard stats: \(error)")
+        }
+    }
+    
+    func loadMockAnalytics() {
+        // doctorsCount = 42 // Not used in UI currently?
         
         generateAnalyticsData()
         generateFeedbackData()

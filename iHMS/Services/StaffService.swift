@@ -66,7 +66,7 @@ final class StaffService {
             .insert(slots)
             .execute()
         
-        print("✅ Created \(slots.count) default time slots for staff \(staffId) on \(dateString)")
+        print(" Created \(slots.count) default time slots for staff \(staffId) on \(dateString)")
     }
     
     func createTimeSlotsForDateRange(staffId: UUID, startDate: Date, endDate: Date, capacity: Int = 5, weekdaysOnly: Bool = false) async throws {
@@ -90,5 +90,34 @@ final class StaffService {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+    func updateStaffPersonalDetails(id: UUID, fullName: String, phone: String) async throws {
+        struct UpdatePayload: Encodable {
+            let full_name: String
+            let phone: String
+        }
+        
+        let payload = UpdatePayload(full_name: fullName, phone: phone)
+        
+        try await supabase
+            .from("staff")
+            .update(payload)
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+    
+    func updateStaffRoleAndDepartment(id: UUID, role: String, departmentId: String) async throws {
+        struct UpdatePayload: Encodable {
+            let designation: String
+            let department_id: String
+        }
+        
+        let payload = UpdatePayload(designation: role, department_id: departmentId)
+        
+        try await supabase
+            .from("staff")
+            .update(payload)
+            .eq("id", value: id.uuidString)
+            .execute()
     }
 }

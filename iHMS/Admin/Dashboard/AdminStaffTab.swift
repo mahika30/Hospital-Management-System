@@ -93,7 +93,11 @@ struct AdminStaffTab: View {
                 }
 
                 ForEach(filteredDoctors) { doctor in
-                    DoctorRowView(doctor: doctor)
+                    NavigationLink {
+                        StaffProfileView(staff: doctor, isOwner: false)
+                    } label: {
+                        DoctorRowView(doctor: doctor)
+                    }
                 }
             }
             .listStyle(.insetGrouped)

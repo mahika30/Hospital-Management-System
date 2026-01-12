@@ -59,6 +59,15 @@ final class AppointmentService {
 
         return appointments
     }
+    func fetchTotalAppointments() async throws -> Int {
+        let count = try await SupabaseManager.shared.client
+            .from("appointments")
+            .select("*", head: true, count: .exact)
+            .execute()
+            .count
+        
+        return count ?? 0
+    }
 }
 
 extension AppointmentService {
