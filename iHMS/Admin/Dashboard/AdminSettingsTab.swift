@@ -14,8 +14,7 @@ struct AdminSettingsTab: View {
                     ProfileHeaderView(
                         image: Image(systemName: "person.crop.circle"), // Placeholder for now, can be hooked to real image later
                         name: profileVM.fullName,
-                        role: profileVM.role,
-                        location: profileVM.locationString
+                        role: profileVM.role
                     )
                     .padding(.top)
                     

@@ -19,8 +19,7 @@ struct StaffProfileView: View {
                 ProfileHeaderView(
                     image: Image(systemName: "person.crop.circle"), // Placeholder
                     name: viewModel.fullName,
-                    role: viewModel.role,
-                    location: viewModel.locationString
+                    role: viewModel.role
                 )
                 .padding(.top)
                 
