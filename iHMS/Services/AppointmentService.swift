@@ -68,6 +68,21 @@ final class AppointmentService {
         
         return count ?? 0
     }
+    
+    func fetchAppointmentsCount(from startDate: Date, to endDate: Date) async throws -> Int {
+        let isoStart = ISO8601DateFormatter().string(from: startDate)
+        let isoEnd = ISO8601DateFormatter().string(from: endDate)
+        
+        let count = try await SupabaseManager.shared.client
+            .from("appointments")
+            .select("*", head: true, count: .exact)
+            .gte("created_at", value: isoStart)
+            .lte("created_at", value: isoEnd)
+            .execute()
+            .count
+        
+        return count ?? 0
+    }
 }
 
 extension AppointmentService {
