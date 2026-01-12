@@ -10,22 +10,20 @@ struct AdminSettingsTab: View {
             ScrollView {
                 VStack(spacing: 24) {
                     
-                    // Header
                     ProfileHeaderView(
-                        image: Image(systemName: "person.crop.circle"), // Placeholder for now, can be hooked to real image later
+                        image: Image(systemName: "person.crop.circle"),
                         name: profileVM.fullName,
                         role: profileVM.role,
                         location: profileVM.locationString
                     )
                     .padding(.top)
                     
-                    // Personal Information
                     EditableInfoSection(
                         title: "Personal Information",
                         isEditing: $profileVM.isEditingPersonal,
                         onSave: profileVM.savePersonalInformation
                     ) {
-                        // Read Mode
+
                         VStack(spacing: 12) {
                             HStack(spacing: 16) {
                                 InfoRowView(label: "First Name", value: profileVM.firstName)
@@ -65,16 +63,14 @@ struct AdminSettingsTab: View {
                             CustomTextField(title: "Phone Number", text: $profileVM.phone)
                                 .keyboardType(.phonePad)
                             
-                            // Email and Role are now read-only in edit mode as per requirements
                             InfoRowView(label: "Email Address", value: profileVM.email)
-                                .opacity(0.7) // Visual cue that it's disabled
+                                .opacity(0.7)
                             
                             InfoRowView(label: "Role", value: profileVM.role)
                                 .opacity(0.7)
                         }
                     }
                     
-                    // Logout Section
                     Button(role: .destructive) {
                         Task {
                             await authVM.signOut()

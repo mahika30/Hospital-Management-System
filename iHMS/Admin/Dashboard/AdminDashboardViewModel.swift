@@ -46,18 +46,13 @@ class AdminDashboardViewModel: ObservableObject {
     @Published var doctorsCount: Int = 0
     @Published var patientsCount: Int = 0
     @Published var appointmentsCount: Int = 0
-    
-    // Services
     private let patientService = PatientService()
     private let appointmentService = AppointmentService()
-    
-    // Analytics
     @Published var selectedDateRange: DateRange = .week
     @Published var revenueData: [AnalyticsData] = []
     @Published var footfallData: [AnalyticsData] = []
     @Published var appointmentsData: [AnalyticsData] = []
-    
-    // Feedback
+
     @Published var recentFeedbacks: [FeedbackItem] = []
     @Published var allFeedbacks: [FeedbackItem] = []
     
@@ -65,7 +60,7 @@ class AdminDashboardViewModel: ObservableObject {
         Task {
             await fetchDashboardStats()
         }
-        loadMockAnalytics() // Keep analytics mock for now as per instructions (only asked for total numbers)
+        loadMockAnalytics()
     }
     
     func fetchDashboardStats() async {
@@ -85,55 +80,16 @@ class AdminDashboardViewModel: ObservableObject {
     }
     
     func loadMockAnalytics() {
-        // doctorsCount = 42 // Not used in UI currently?
-        
+    
         generateAnalyticsData()
         generateFeedbackData()
     }
     
     func generateAnalyticsData() {
-        // Mock data logic based on date range (simplified for now)
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Generate last 7 days mock data
-        var newRevenue: [AnalyticsData] = []
-        var newFootfall: [AnalyticsData] = []
-        
-        for i in 0..<7 {
-            if let date = calendar.date(byAdding: .day, value: -i, to: today) {
-                newRevenue.append(AnalyticsData(date: date, value: Double.random(in: 1000...5000)))
-                newFootfall.append(AnalyticsData(date: date, value: Double.random(in: 20...100)))
-            }
-        }
-        
-        revenueData = newRevenue.sorted(by: { $0.date < $1.date })
-        footfallData = newFootfall.sorted(by: { $0.date < $1.date })
     }
     
     func generateFeedbackData() {
-        let names = ["Alice Johnson", "Bob Smith", "Charlie Brown", "Diana Prince", "Evan Wright"]
-        let comments = [
-            "Great service, very polite staff.",
-            "Waiting time was a bit long.",
-            "Doctor was extremely helpful explaining things.",
-            "Clean facilities and good vibes.",
-            "App appointment system is smooth."
-        ]
-        
-        var generated: [FeedbackItem] = []
-        for i in 0..<20 {
-            let item = FeedbackItem(
-                userName: names[i % names.count],
-                feedbackText: comments[i % comments.count],
-                rating: Int.random(in: 3...5),
-                date: Date()
-            )
-            generated.append(item)
-        }
-        
-        allFeedbacks = generated
-        recentFeedbacks = Array(generated.prefix(3))
+
     }
     
     func updateAnalytics(range: DateRange) {
