@@ -114,7 +114,11 @@ final class AuthViewModel: ObservableObject {
             try await supabase.auth.signIn(email: email, password: password)
             await restoreSession()
         } catch {
-            errorMessage = error.localizedDescription
+            if error.localizedDescription.localizedCaseInsensitiveContains("Invalid login credentials") {
+                errorMessage = "Invalid username or password"
+            } else {
+                errorMessage = error.localizedDescription
+            }
             resetAuthState()
         }
     }

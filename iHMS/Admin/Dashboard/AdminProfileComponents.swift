@@ -6,7 +6,6 @@ struct ProfileHeaderView: View {
     let image: Image
     let name: String
     let role: String
-    let location: String
     
     var body: some View {
         VStack(spacing: 12) {
@@ -36,14 +35,6 @@ struct ProfileHeaderView: View {
                 Text(role)
                     .font(.subheadline)
                     .foregroundColor(Theme.secondaryText)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin.and.ellipse")
-                    Text(location)
-                }
-                .font(.caption)
-                .foregroundColor(Theme.secondaryText)
-                .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity)

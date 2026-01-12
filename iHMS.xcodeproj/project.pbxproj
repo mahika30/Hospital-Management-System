@@ -16,16 +16,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0EDAAB5C2F0784CD0023FFF6 /* iHMS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iHMS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EDAAB5C2F0784CD0023FFF6 /* `n.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "`n.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0EA91F1D2F0D28B3003CAD40 /* Exceptions for "iHMS" folder in "iHMS" target */ = {
+		0EA91F1D2F0D28B3003CAD40 /* Exceptions for "iHMS" folder in "`n" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 0EDAAB5B2F0784CD0023FFF6 /* iHMS */;
+			target = 0EDAAB5B2F0784CD0023FFF6 /* `n */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -33,7 +33,7 @@
 		0EDAAB5E2F0784CD0023FFF6 /* iHMS */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				0EA91F1D2F0D28B3003CAD40 /* Exceptions for "iHMS" folder in "iHMS" target */,
+				0EA91F1D2F0D28B3003CAD40 /* Exceptions for "iHMS" folder in "`n" target */,
 			);
 			path = iHMS;
 			sourceTree = "<group>";
@@ -69,7 +69,7 @@
 		0EDAAB5D2F0784CD0023FFF6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0EDAAB5C2F0784CD0023FFF6 /* iHMS.app */,
+				0EDAAB5C2F0784CD0023FFF6 /* `n.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,9 +84,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0EDAAB5B2F0784CD0023FFF6 /* iHMS */ = {
+		0EDAAB5B2F0784CD0023FFF6 /* `n */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0EDAAB672F0784CD0023FFF6 /* Build configuration list for PBXNativeTarget "iHMS" */;
+			buildConfigurationList = 0EDAAB672F0784CD0023FFF6 /* Build configuration list for PBXNativeTarget "`n" */;
 			buildPhases = (
 				0EDAAB582F0784CD0023FFF6 /* Sources */,
 				0EDAAB592F0784CD0023FFF6 /* Frameworks */,
@@ -99,7 +99,7 @@
 			fileSystemSynchronizedGroups = (
 				0EDAAB5E2F0784CD0023FFF6 /* iHMS */,
 			);
-			name = iHMS;
+			name = "`n";
 			packageProductDependencies = (
 				0EDAAB712F0785BF0023FFF6 /* Auth */,
 				0EDAAB732F0785BF0023FFF6 /* Functions */,
@@ -109,7 +109,7 @@
 				0EDAAB802F0787910023FFF6 /* Supabase */,
 			);
 			productName = iHMS;
-			productReference = 0EDAAB5C2F0784CD0023FFF6 /* iHMS.app */;
+			productReference = 0EDAAB5C2F0784CD0023FFF6 /* `n.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -144,7 +144,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0EDAAB5B2F0784CD0023FFF6 /* iHMS */,
+				0EDAAB5B2F0784CD0023FFF6 /* `n */,
 			);
 		};
 /* End PBXProject section */
@@ -299,7 +299,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3D7P6Q22PM;
+				DEVELOPMENT_TEAM = TW85A4L8U7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iHMS/Info.plist;
@@ -316,7 +316,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Hargun.iHMS;
+				PRODUCT_BUNDLE_IDENTIFIER = idk.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -337,7 +337,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3D7P6Q22PM;
+				DEVELOPMENT_TEAM = TW85A4L8U7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iHMS/Info.plist;
@@ -354,7 +354,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Hargun.iHMS;
+				PRODUCT_BUNDLE_IDENTIFIER = idk.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -379,7 +379,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0EDAAB672F0784CD0023FFF6 /* Build configuration list for PBXNativeTarget "iHMS" */ = {
+		0EDAAB672F0784CD0023FFF6 /* Build configuration list for PBXNativeTarget "`n" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0EDAAB682F0784CD0023FFF6 /* Debug */,
