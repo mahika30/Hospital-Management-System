@@ -130,6 +130,7 @@ struct PatientDashboardView: View {
 
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var viewModel = PatientViewModel()
+    @State private var navigateToPayments = false
 
     @State private var showingProfile = false
     @State private var showQROverlay = false
@@ -151,6 +152,13 @@ struct PatientDashboardView: View {
             ) {
                 EmptyView()
             }
+            NavigationLink(
+                destination: PaymentHistoryView(),
+                isActive: $navigateToPayments
+            ) {
+                EmptyView()
+            }
+
 
             ZStack {
                 Color.black.ignoresSafeArea()
@@ -309,8 +317,9 @@ struct PatientDashboardView: View {
                     subtitle: "Invoices and transactions",
                     tint: .green
                 ){
-                    navigateToDoctorList = false
+                    navigateToPayments = true
                 }
+
             }
         }
     }

@@ -15,11 +15,13 @@ import Foundation
 
 struct PaymentInsert: Encodable {
     let patient_id: UUID
+    let appointment_id: UUID
     let amount: Int
     let status: String
     let payment_method: String
     let transaction_id: String
 }
+
 
 
 struct BookAppointmentView: View {
@@ -445,26 +447,29 @@ private extension BookAppointmentView {
 
                             Task {
                                 do {
+                                    let appointmentId = try await viewModel
+                                        .bookAppointmentAndReturnId(doctorId: selectedDoctor.id)
+
                                     let userId = try await SupabaseManager.shared.client.auth.session.user.id
 
                                     let payment = PaymentInsert(
                                         patient_id: userId,
+                                        appointment_id: appointmentId,
                                         amount: consultationFee,
                                         status: "paid",
                                         payment_method: "upi",
-                                        transaction_id: txId
+                                        transaction_id: UUID().uuidString
                                     )
 
                                     try await SupabaseManager.shared.client.database
                                         .from("payments")
                                         .insert(payment)
+                                        .execute()
 
-                                    await viewModel.bookAppointment(
-                                        doctorId: selectedDoctor.id
-                                    )
+                                    paymentCompleted = true
 
                                 } catch {
-                                    viewModel.errorMessage = "Payment or booking failed. Please try again."
+                                    viewModel.errorMessage = "Payment or booking failed"
                                     paymentCompleted = false
                                 }
                             }
