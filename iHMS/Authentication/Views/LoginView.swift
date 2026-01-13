@@ -70,7 +70,7 @@ struct LoginView: View {
                     in: RoundedRectangle(cornerRadius: 16)
                 )
                 .foregroundColor(.white)
-                .disabled(authVM.isLoading)
+                .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
 
                 if let error = authVM.errorMessage {
                     Text(error)
