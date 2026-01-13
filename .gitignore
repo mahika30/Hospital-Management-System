@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 *.xcuserdata
 *.xcuserstate
+=======
+# Xcode user interface state
+*.xcuserstate
+*.xcuserdata/
+>>>>>>> 2efc940d4ddd4e89ade1a4cf0e2a218371ff600f
 

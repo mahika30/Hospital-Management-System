@@ -15,8 +15,7 @@ struct Staff: Identifiable, Codable {
     let designation: String?
     let phone: String?
     let createdAt: String?
-    
-    // Availability Management Extensions
+
     var specialization: String?
     var slotCapacity: Int?
     var profileImage: String?
