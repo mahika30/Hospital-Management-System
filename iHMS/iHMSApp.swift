@@ -23,6 +23,10 @@ struct iHMSApp: App {
                         await authVM.handleAuthCallback(url: url)
                     }
                 }
+                .onAppear {
+                    // Temporary Analytics Debug
+                    AnalyticsService.shared.debugAnalytics()
+                }
         }
     }
 }
