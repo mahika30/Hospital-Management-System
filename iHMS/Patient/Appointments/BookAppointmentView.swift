@@ -6,6 +6,21 @@
 //
 
 import SwiftUI
+import Supabase
+import Auth
+import PostgREST
+
+
+import Foundation
+
+struct PaymentInsert: Encodable {
+    let patient_id: UUID
+    let amount: Int
+    let status: String
+    let payment_method: String
+    let transaction_id: String
+}
+
 
 struct BookAppointmentView: View {
 
@@ -13,8 +28,16 @@ struct BookAppointmentView: View {
     let selectedDoctor: Staff
 
     // MARK: - State
+    @State private var paymentCompleted = false
+    private let consultationFee = 250
+    @State private var showPaymentOverlay = false
+    @State private var isPaying = false
+    @State private var bookedSlotTime: String?
+    @State private var transactionId: String?
+
+
     @StateObject private var viewModel = BookAppointmentViewModel()
-    @State private var showConfirm = false
+//    @State private var showConfirm = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -23,6 +46,9 @@ struct BookAppointmentView: View {
                 doctorCard
                 dateSection
                 timeSlotSection
+                if viewModel.selectedSlot != nil {
+                    paymentSection
+                }
                 
                 if let error = viewModel.errorMessage {
                     Text(error)
@@ -34,38 +60,51 @@ struct BookAppointmentView: View {
                         .cornerRadius(12)
                 }
                 
-                confirmButton
             }
             .padding()
         }
         .navigationTitle("Book Appointment")
         .navigationBarTitleDisplayMode(.large)
-        .alert(
-            "Confirm Appointment",
-            isPresented: $showConfirm
-        ) {
-            Button("Confirm") {
-                Task {
-                    if let slot = viewModel.selectedSlot {
-                        await viewModel.bookAppointment(
-                            doctorId: selectedDoctor.id
-                        )
-                    }
-                }
-            }
-
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            if let slot = viewModel.selectedSlot {
-                Text("Book appointment for \(slot.timeRange)?")
-            }
-        }
+//        .alert(
+//            "Confirm Appointment",
+//            isPresented: $showConfirm
+//        ) {
+//            Button("Confirm") {
+//                Task {
+//                    if let slot = viewModel.selectedSlot {
+//                        await viewModel.bookAppointment(
+//                            doctorId: selectedDoctor.id
+//                        )
+//                    }
+//                }
+//            }
+//
+//            Button("Cancel", role: .cancel) {}
+//        } message: {
+//            if let slot = viewModel.selectedSlot {
+//                Text("Book appointment for \(slot.timeRange)?")
+//            }
+//        }
         .alert("Appointment Booked!", isPresented: $viewModel.bookingSuccess) {
             Button("OK") {
                 dismiss()
             }
         } message: {
-            Text("Your appointment has been successfully booked. You can view it in your upcoming appointments.")
+            if let slotTime = bookedSlotTime {
+                Text(
+                    "Your appointment for \(slotTime) has been successfully booked. " +
+                    "You can view it in your upcoming appointments."
+                )
+            } else {
+                Text(
+                    "Your appointment has been successfully booked. " +
+                    "You can view it in your upcoming appointments."
+                )
+            }
+        }
+
+        .fullScreenCover(isPresented: $showPaymentOverlay) {
+            PaymentConfirmationView(isPaying: isPaying)
         }
         .task {
             await viewModel.loadSlots(
@@ -325,7 +364,7 @@ private extension BookAppointmentView {
 
     var confirmButton: some View {
         Button {
-            showConfirm = true
+//            showConfirm = true
         } label: {
             HStack {
                 Image(systemName: "checkmark.circle.fill")
@@ -338,11 +377,158 @@ private extension BookAppointmentView {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(viewModel.selectedSlot == nil || viewModel.isLoading ? Color.gray : Color.blue)
+                    .fill(
+                        viewModel.selectedSlot == nil ||
+                        viewModel.isLoading ||
+                        !paymentCompleted
+                        ? Color.gray
+                        : Color.blue
+                    )
             )
+
             .foregroundStyle(.white)
         }
-        .disabled(viewModel.selectedSlot == nil || viewModel.isLoading)
+        .disabled(
+            viewModel.selectedSlot == nil ||
+            viewModel.isLoading ||
+            !paymentCompleted
+        ).onChange(of: viewModel.selectedSlot) {
+            paymentCompleted = false
+        }
+
         .padding(.top, 8)
+    }
+}
+private extension BookAppointmentView {
+
+    var paymentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Consultation Fees")
+                .font(.headline)
+
+            HStack {
+                Text("Amount")
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text("₹\(consultationFee)")
+                    .font(.title3)
+                    .fontWeight(.bold)
+            }
+
+            if paymentCompleted {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+
+                    Text("Payment Completed")
+                        .foregroundStyle(.green)
+                        .font(.subheadline)
+                }
+            } else {
+                Button {
+                    showPaymentOverlay = true
+                    isPaying = true
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isPaying = false
+
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+
+                            let txId = UUID().uuidString
+                            transactionId = txId
+
+                            withAnimation {
+                                paymentCompleted = true
+                            }
+
+                            Task {
+                                do {
+                                    let userId = try await SupabaseManager.shared.client.auth.session.user.id
+
+                                    let payment = PaymentInsert(
+                                        patient_id: userId,
+                                        amount: consultationFee,
+                                        status: "paid",
+                                        payment_method: "upi",
+                                        transaction_id: txId
+                                    )
+
+                                    try await SupabaseManager.shared.client.database
+                                        .from("payments")
+                                        .insert(payment)
+
+                                    await viewModel.bookAppointment(
+                                        doctorId: selectedDoctor.id
+                                    )
+
+                                } catch {
+                                    viewModel.errorMessage = "Payment or booking failed. Please try again."
+                                    paymentCompleted = false
+                                }
+                            }
+
+
+
+                            showPaymentOverlay = false
+                        }
+
+
+                    }
+                } label: {
+                    Text("Pay ₹\(consultationFee)")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                }
+                .disabled(isPaying)
+
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+}
+
+struct PaymentConfirmationView: View {
+
+    let isPaying: Bool
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.95)
+                .ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                if isPaying {
+                    ProgressView()
+                        .scaleEffect(1.6)
+                        .tint(.white)
+
+                    Text("Processing Payment…")
+                        .foregroundStyle(.white)
+                        .font(.headline)
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundStyle(.green)
+
+                    Text("Payment Successful")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                }
+            }
+        }
     }
 }
