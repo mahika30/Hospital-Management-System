@@ -5,50 +5,39 @@
 //  Created by Navdeep Singh on 13/01/26.
 //
 
-import Foundation
 import SwiftUI
 
 struct PaymentRow: View {
-    
+
     let payment: Payment
-    
+    @EnvironmentObject var authVM: AuthViewModel
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            
+
             HStack {
                 Text("₹\(payment.amount)")
                     .font(.headline)
-                
+
                 Spacer()
-                
+
                 Text(payment.status.capitalized)
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        payment.status == "paid"
-                        ? Color.green.opacity(0.2)
-                        : Color.red.opacity(0.2)
-                    )
+                    .font(.caption)
                     .foregroundStyle(payment.status == "paid" ? .green : .red)
-                    .cornerRadius(6)
             }
-            
+
+            // 🩺 CONSULTATION TITLE
             Text("Doctor Consultation")
                 .font(.subheadline)
-                .fontWeight(.medium)
-            
-            Text("Paid via \(payment.payment_method?.uppercased())")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+
             if let tx = payment.transaction_id {
                 Text("Txn ID: \(tx)")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
             Text(
                 payment.created_at.formatted(
                     date: .abbreviated,
@@ -57,8 +46,35 @@ struct PaymentRow: View {
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            // ⬇️ DOWNLOAD RECEIPT
+            HStack {
+                Spacer()
+
+                ShareLink(
+                    item: ReceiptPDFGenerator.generate(
+                        receipt: PaymentReceipt(
+                            hospitalName: "iHMS Hospital",
+                            patientName: "Patient",
+                            amount: payment.amount,
+                            status: payment.status,
+                            transactionId: payment.transaction_id
+                                ?? payment.id.uuidString,
+                            paymentMethod: payment.payment_method ?? "upi",
+                            createdAt: payment.created_at
+                        )
+                    ),
+                    preview: SharePreview(
+                        "Payment Receipt",
+                        icon: Image(systemName: "doc.fill")
+                    )
+                ) {
+                    Label("Receipt", systemImage: "arrow.down.doc")
+                        .font(.caption)
+                }
+            }
         }
-        .padding(.vertical, 8)
-        
+        .padding(.vertical, 10)
+
     }
 }
