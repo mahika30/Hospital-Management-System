@@ -151,6 +151,8 @@ extension Color {
             return .blue
         case .confirmed:
             return .green
+        case .inProgress:
+            return .orange
         case .completed:
             return .gray
         case .cancelled:
@@ -230,17 +232,17 @@ extension String {
 extension Array where Element == TimeSlot {
     /// Returns available time slots
     var availableSlots: [TimeSlot] {
-        self.filter { $0.isAvailable && !$0.isFull }
+        self.filter { ($0.isAvailable ?? false) && !$0.isFull }
     }
     
     /// Returns total booked count
     var totalBookedCount: Int {
-        self.reduce(0) { $0 + $1.currentBookings }
+        self.reduce(0) { $0 + ($1.currentBookings ?? 0) }
     }
     
     /// Returns total capacity
     var totalCapacity: Int {
-        self.reduce(0) { $0 + $1.maxCapacity }
+        self.reduce(0) { $0 + ($1.maxCapacity ?? 0) }
     }
     
     /// Returns fill percentage

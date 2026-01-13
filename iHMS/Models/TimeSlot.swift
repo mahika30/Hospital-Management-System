@@ -9,15 +9,15 @@ import Foundation
 
 struct TimeSlot: Identifiable, Codable, Hashable {
     let id: UUID
-    let staffId: UUID
-    let slotDate: String
+    let staffId: UUID?
+    let slotDate: String?
     var startTime: String
     var endTime: String
-    var isAvailable: Bool
-    var currentBookings: Int
-    var maxCapacity: Int
-    var isRunningLate: Bool
-    var delayMinutes: Int
+    var isAvailable: Bool?
+    var currentBookings: Int?
+    var maxCapacity: Int?
+    var isRunningLate: Bool?
+    var delayMinutes: Int?
     let createdAt: String?
     let updatedAt: String?
     
@@ -38,6 +38,7 @@ struct TimeSlot: Identifiable, Codable, Hashable {
     
     // Helper: convert slotDate String → Date
     private var slotDateAsDate: Date? {
+        guard let slotDate = slotDate else { return nil }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
@@ -62,7 +63,7 @@ struct TimeSlot: Identifiable, Codable, Hashable {
 
     // Formatted date: Jan 9, 2026
     var formattedDate: String {
-        guard let date = slotDateAsDate else { return slotDate }
+        guard let date = slotDateAsDate else { return slotDate ?? "-" }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         return formatter.string(from: date)
@@ -83,19 +84,26 @@ struct TimeSlot: Identifiable, Codable, Hashable {
     }
     
     var isFull: Bool {
-        currentBookings >= maxCapacity
+        guard let currentBookings = currentBookings,
+              let maxCapacity = maxCapacity else { return false }
+        return currentBookings >= maxCapacity
     }
     
     var availableSlots: Int {
-        max(0, maxCapacity - currentBookings)
+        guard let currentBookings = currentBookings,
+              let maxCapacity = maxCapacity else { return 0 }
+        return max(0, maxCapacity - currentBookings)
     }
     
     var fillPercentage: Double {
-        guard maxCapacity > 0 else { return 0 }
+        guard let currentBookings = currentBookings,
+              let maxCapacity = maxCapacity,
+              maxCapacity > 0 else { return 0 }
         return Double(currentBookings) / Double(maxCapacity)
     }
     
     var status: SlotStatus {
+        guard let isAvailable = isAvailable else { return .disabled }
         if !isAvailable {
             return .disabled
         } else if isFull {

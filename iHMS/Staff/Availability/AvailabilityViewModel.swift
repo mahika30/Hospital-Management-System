@@ -108,7 +108,8 @@ class AvailabilityViewModel {
             let today = Date()
 
             if let lastSlot = response.first,
-               let lastSlotDate = parseDate(lastSlot.slotDate) {
+               let slotDateString = lastSlot.slotDate,
+               let lastSlotDate = parseDate(slotDateString) {
 
                 let daysDifference = Calendar.current.dateComponents(
                     [.day],
@@ -205,7 +206,7 @@ class AvailabilityViewModel {
     }
     
     func adjustDelay(_ slot: TimeSlot, by minutes: Int) async {
-        let newDelay = max(0, slot.delayMinutes + minutes)
+        let newDelay = max(0, (slot.delayMinutes ?? 0) + minutes)
         
         struct Payload: Encodable {
             let delay_minutes: Int
