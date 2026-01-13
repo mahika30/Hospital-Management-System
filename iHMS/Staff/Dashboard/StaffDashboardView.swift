@@ -90,7 +90,8 @@ struct DashboardHomeView: View {
                 QuickStatsSection(
                     admittedCount: admittedCount,
                     todayAppointments: todayAppointments,
-                    isLoading: isLoadingStats
+                    isLoading: isLoadingStats,
+                    staffId: staff.id
                 )
                 .padding(.horizontal)
                 
@@ -132,15 +133,17 @@ struct DashboardHomeView: View {
             let today = calendar.startOfDay(for: Date())
             let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
             
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions = [.withFullDate]
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let todayString = dateFormatter.string(from: today)
+            let tomorrowString = dateFormatter.string(from: tomorrow)
             
             let completedResponse: [Appointment] = try await SupabaseManager.shared.client
                 .from("appointments")
                 .select()
                 .eq("staff_id", value: staff.id.uuidString)
-                .gte("appointment_date", value: dateFormatter.string(from: today))
-                .lt("appointment_date", value: dateFormatter.string(from: tomorrow))
+                .gte("appointment_date", value: todayString)
+                .lt("appointment_date", value: tomorrowString)
                 .eq("status", value: "completed")
                 .execute()
                 .value
@@ -154,17 +157,27 @@ struct DashboardHomeView: View {
             let today = calendar.startOfDay(for: Date())
             let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
             
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let todayString = dateFormatter.string(from: today)
+            let tomorrowString = dateFormatter.string(from: tomorrow)
+            
+            print("📊 Dashboard loading appointments for staff: \(staff.id)")
+            print("📊 Date range: \(todayString) to \(tomorrowString)")
+            
             let appointmentsResponse: [Appointment] = try await SupabaseManager.shared.client
                 .from("appointments")
                 .select()
                 .eq("staff_id", value: staff.id.uuidString)
-                .gte("appointment_date", value: today.ISO8601Format())
-                .lt("appointment_date", value: tomorrow.ISO8601Format())
+                .gte("appointment_date", value: todayString)
+                .lt("appointment_date", value: tomorrowString)
                 .execute()
                 .value
             
+            print("📊 Dashboard found \(appointmentsResponse.count) appointments")
             todayAppointments = appointmentsResponse.count
         } catch {
+            print("📊 Dashboard error: \(error)")
             print("Error loading today's appointments: \(error)")
         }
         
@@ -288,6 +301,7 @@ private struct QuickStatsSection: View {
     let admittedCount: Int
     let todayAppointments: Int
     let isLoading: Bool
+    let staffId: UUID
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -299,19 +313,29 @@ private struct QuickStatsSection: View {
                     .frame(maxWidth: .infinity)
             } else {
                 HStack(spacing: 12) {
-                    StatCard(
-                        title: "Today's Appointments",
-                        value: "\(todayAppointments)",
-                        icon: "calendar",
-                        color: .blue
-                    )
+                    NavigationLink {
+                        TodayAppointmentsView(staffId: staffId)
+                    } label: {
+                        StatCard(
+                            title: "Today's Appointments",
+                            value: "\(todayAppointments)",
+                            icon: "calendar",
+                            color: .blue
+                        )
+                    }
+                    .buttonStyle(.plain)
                     
-                    StatCard(
-                        title: "Completed Today",
-                        value: "\(admittedCount)",
-                        icon: "checkmark.circle.fill",
-                        color: .green
-                    )
+                    NavigationLink {
+                        CompletedTodayAppointmentsView(staffId: staffId)
+                    } label: {
+                        StatCard(
+                            title: "Completed Today",
+                            value: "\(admittedCount)",
+                            icon: "checkmark.circle.fill",
+                            color: .green
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -365,8 +389,8 @@ private struct QuickActionsSection: View {
                     ActionCard(
                         title: "Manage Availability",
                         subtitle: "Set your working hours and time slots",
-                        icon: "calendar.badge.clock",
-                        color: .blue
+                        icon: "calendar",
+                        color: .orange
                     )
                 }
                 .buttonStyle(.plain)

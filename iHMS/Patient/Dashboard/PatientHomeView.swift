@@ -135,6 +135,7 @@ struct PatientDashboardView: View {
     @State private var showQROverlay = false
     @State private var navigateToDoctorList = false
     @State private var navigateToPastAppointments = false
+    @State private var navigateToPrescriptions = false
 
     var body: some View {
         NavigationStack {
@@ -148,6 +149,13 @@ struct PatientDashboardView: View {
             NavigationLink(
                 destination: PastAppointmentsView(patientId: viewModel.patient?.id ?? UUID()),
                 isActive: $navigateToPastAppointments
+            ) {
+                EmptyView()
+            }
+            
+            NavigationLink(
+                destination: PrescriptionsListView(patientId: viewModel.patient?.id ?? UUID()),
+                isActive: $navigateToPrescriptions
             ) {
                 EmptyView()
             }
@@ -261,7 +269,12 @@ struct PatientDashboardView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
                         ForEach(viewModel.appointments) { appointment in
-                            AppointmentCard(appointment: appointment)
+                            NavigationLink {
+                                PatientAppointmentDetailView(appointment: appointment)
+                            } label: {
+                                AppointmentCard(appointment: appointment)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -284,7 +297,6 @@ struct PatientDashboardView: View {
                     navigateToDoctorList = true
                 }
 
-
                 QuickActionCard(
                     icon: "clock.arrow.circlepath",
                     title: "Past Appointments",
@@ -295,9 +307,18 @@ struct PatientDashboardView: View {
                 }
                 
                 QuickActionCard(
+                    icon: "pills.fill",
+                    title: "My Prescriptions",
+                    subtitle: "View prescribed medicines",
+                    tint: .green
+                ){
+                    navigateToPrescriptions = true
+                }
+                
+                QuickActionCard(
                     icon: "doc.text.fill",
                     title: "Medical Records",
-                    subtitle: "View reports & prescriptions",
+                    subtitle: "View reports & documents",
                     tint: .purple
                 ){
                     navigateToDoctorList = false
