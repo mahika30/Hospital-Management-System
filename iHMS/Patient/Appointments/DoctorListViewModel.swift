@@ -14,15 +14,33 @@ final class DoctorListViewModel: ObservableObject {
 
     @Published var doctors: [Staff] = []
     @Published var searchText = ""
+    @Published var selectedDepartment: String? = nil
     @Published var isLoading = false
 
     private let staffService = StaffService()
+    
+    var departments: [String] {
+        let allDepts = doctors.compactMap { $0.departmentId }.filter { !$0.isEmpty }
+        return Array(Set(allDepts)).sorted()
+    }
 
     var filteredDoctors: [Staff] {
-        guard !searchText.isEmpty else { return doctors }
-        return doctors.filter {
-            $0.fullName.lowercased().contains(searchText.lowercased())
+        var result = doctors
+        
+        // Filter by department
+        if let dept = selectedDepartment {
+            result = result.filter { $0.departmentId == dept }
         }
+        
+        // Filter by search
+        if !searchText.isEmpty {
+            result = result.filter {
+                $0.fullName.lowercased().contains(searchText.lowercased()) ||
+                $0.designation?.lowercased().contains(searchText.lowercased()) == true
+            }
+        }
+        
+        return result
     }
 
     func loadDoctors() async {

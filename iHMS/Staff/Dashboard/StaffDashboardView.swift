@@ -28,12 +28,20 @@ struct StaffDashboardView: View {
                 .tag(0)
                 
                 NavigationStack {
+                    ManageAvailabilityView(staff: staff)
+                }
+                .tabItem {
+                    Label("Schedule", systemImage: "calendar")
+                }
+                .tag(1)
+                
+                NavigationStack {
                     ScanPatientView()
                 }
                 .tabItem {
                     Label("Scan Patient", systemImage: "qrcode.viewfinder")
                 }
-                .tag(1)
+                .tag(2)
             }
         } else {
             ErrorStateView()
@@ -384,18 +392,6 @@ private struct QuickActionsSection: View {
             
             VStack(spacing: 12) {
                 NavigationLink {
-                    ManageAvailabilityView(staff: staff)
-                } label: {
-                    ActionCard(
-                        title: "Manage Availability",
-                        subtitle: "Set your working hours and time slots",
-                        icon: "calendar",
-                        color: .orange
-                    )
-                }
-                .buttonStyle(.plain)
-                
-                NavigationLink {
                     PatientSearchView()
                 } label: {
                     ActionCard(
@@ -411,9 +407,9 @@ private struct QuickActionsSection: View {
                     CompletedAppointmentsView(staffId: staff.id)
                 } label: {
                     ActionCard(
-                        title: "Completed Appointments",
+                        title: "Past Appointments",
                         subtitle: "View your appointment history",
-                        icon: "checkmark.circle.fill",
+                        icon: "clock.arrow.circlepath",
                         color: .purple
                     )
                 }

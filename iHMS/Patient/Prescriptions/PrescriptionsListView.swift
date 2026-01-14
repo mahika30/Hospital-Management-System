@@ -68,7 +68,7 @@ struct PrescriptionRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "doc.text.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.accentColor)
                 
                 Text("Prescription")
                     .font(.headline)
@@ -90,7 +90,7 @@ struct PrescriptionRow: View {
             if let medicinesCount = prescription.medicines?.count {
                 Label("\(medicinesCount) medicines", systemImage: "pills")
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.accentColor)
             }
             
             if let followUpDate = prescription.followUpDate {

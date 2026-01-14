@@ -13,11 +13,12 @@ struct CreatePrescriptionView: View {
     @State private var showingAddMedicine = false
     @State private var showingFollowUpSheet = false
     
-    init(patient: Patient, appointment: Appointment, staffId: UUID) {
+    init(patient: Patient, appointment: Appointment, staffId: UUID, existingPrescription: Prescription? = nil) {
         _viewModel = StateObject(wrappedValue: CreatePrescriptionViewModel(
             patient: patient,
             appointment: appointment,
-            staffId: staffId
+            staffId: staffId,
+            existingPrescription: existingPrescription
         ))
     }
     
@@ -42,7 +43,7 @@ struct CreatePrescriptionView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Create Prescription")
+            .navigationTitle(viewModel.isEditMode ? "Edit Prescription" : "Create Prescription")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -59,7 +60,7 @@ struct CreatePrescriptionView: View {
                             }
                         }
                     }
-                    .disabled(viewModel.isLoading || viewModel.medicines.isEmpty)
+                    .disabled(viewModel.isLoading || (viewModel.diagnosis.isEmpty && viewModel.medicines.isEmpty))
                 }
             }
             .sheet(isPresented: $showingAddMedicine) {
@@ -114,10 +115,10 @@ struct CreatePrescriptionView: View {
     
     private var diagnosisSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Diagnosis")
+            Text("Diagnosis Notes")
                 .font(.headline)
             
-            TextField("Enter diagnosis", text: $viewModel.diagnosis, axis: .vertical)
+            TextField("Enter diagnosis and treatment details", text: $viewModel.diagnosis, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...6)
         }
@@ -158,10 +159,10 @@ struct CreatePrescriptionView: View {
     
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Additional Notes")
+            Text("Internal Notes")
                 .font(.headline)
             
-            TextField("Enter additional notes", text: $viewModel.notes, axis: .vertical)
+            TextField("Enter internal notes (doctor only)", text: $viewModel.notes, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...6)
         }

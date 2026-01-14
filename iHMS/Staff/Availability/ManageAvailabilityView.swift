@@ -130,23 +130,55 @@ struct ManageAvailabilityView: View {
     }
     
     private var datePickerSection: some View {
-        VStack(spacing: 8) {
-            DatePicker(
-                "Select Date",
-                selection: $viewModel.selectedDate,
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(16)
+        VStack(spacing: 12) {
+            // Month/Year Header with Navigation
+            HStack {
+                Button(action: { viewModel.previousMonth() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+                
+                Spacer()
+                
+                Text(viewModel.monthYearString)
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button(action: { viewModel.nextMonth() }) {
+                    Image(systemName: "chevron.right")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.horizontal)
             
-            // Day name as secondary text
+            // Horizontal scrolling date picker
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(viewModel.daysInMonth, id: \.self) { date in
+                        DateCell(
+                            date: date,
+                            isSelected: Calendar.current.isDate(date, inSameDayAs: viewModel.selectedDate),
+                            isToday: Calendar.current.isDateInToday(date)
+                        )
+                        .onTapGesture {
+                            viewModel.selectedDate = date
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+            
+            // Selected day name
             Text(viewModel.selectedDayName)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal)
+        .padding()
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
     }
     
     private var timeSlotsSection: some View {
@@ -833,3 +865,42 @@ private struct TimeSlotRow: View {
     }
 }
 
+// MARK: - DateCell Component
+struct DateCell: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    
+    private var dayName: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: date)
+    }
+    
+    private var dayNumber: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(dayName)
+                .font(.caption2)
+                .foregroundStyle(isSelected ? .white : .secondary)
+            
+            Text(dayNumber)
+                .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? .white : .primary)
+        }
+        .frame(width: 50, height: 60)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isSelected ? Color.blue : (isToday ? Color.blue.opacity(0.1) : Color.clear))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isToday && !isSelected ? Color.blue : Color.clear, lineWidth: 1)
+        )
+    }
+}

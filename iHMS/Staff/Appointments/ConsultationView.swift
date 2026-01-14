@@ -46,13 +46,6 @@ struct ConsultationView: View {
         }
         .navigationTitle("Consultation")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Close") {
-                    dismiss()
-                }
-            }
-        }
         .sheet(isPresented: $showingCreatePrescription, onDismiss: {
             // Reload prescription after dismissing create/edit sheet
             Task {
@@ -62,7 +55,8 @@ struct ConsultationView: View {
             CreatePrescriptionView(
                 patient: patient,
                 appointment: appointment,
-                staffId: staffId
+                staffId: staffId,
+                existingPrescription: prescription
             )
         }
         .alert("Complete Consultation", isPresented: $showingCompletionAlert) {
