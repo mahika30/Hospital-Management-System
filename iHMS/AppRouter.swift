@@ -59,7 +59,7 @@ struct AppRouter: View {
             ProgressView("Loading...")
         }
         else if !authVM.isAuthenticated {
-            AuthContainerView()
+            LandingView()
         }
         else if authVM.mustSetPassword {
             SetPasswordView(flow: .onboarding)

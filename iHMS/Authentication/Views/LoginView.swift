@@ -119,24 +119,65 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
 
+    private var isLoginDisabled: Bool {
+        authVM.isLoading || email.isEmpty || password.isEmpty
+    }
+
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 32) {
 
-            Text("Welcome Back")
-                .font(.largeTitle.bold())
+            Spacer(minLength: 40)
 
-            TextField("Email", text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .padding()
-                .background(.ultraThinMaterial)
-                .cornerRadius(14)
+            // MARK: - Header
+            VStack(spacing: 8) {
+                Text("Sign in")
+                    .font(.largeTitle.weight(.semibold))
 
-            SecureField("Password", text: $password)
-                .padding()
-                .background(.ultraThinMaterial)
-                .cornerRadius(14)
+                Text("Continue to your account")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
+            // MARK: - Card
+            VStack(spacing: 16) {
+
+                TextField("Email address", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .textContentType(.emailAddress)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(uiColor: .separator).opacity(0.25))
+                    )
+
+                SecureField("Password", text: $password)
+                    .textContentType(.password)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(uiColor: .separator).opacity(0.25))
+                    )
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color(uiColor: .secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color(uiColor: .separator).opacity(0.3))
+            )
+
+            // MARK: - Primary Action
             Button {
                 Task {
                     await authVM.login(email: email, password: password)
@@ -145,42 +186,51 @@ struct LoginView: View {
                 HStack {
                     if authVM.isLoading {
                         ProgressView()
-                            .tint(.white)
                     } else {
-                        Text("Login")
-                            .font(.headline)
+                        Text("Sign In")
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
             }
-            .background(
-                LinearGradient(
-                    colors: authVM.isLoading || email.isEmpty || password.isEmpty
-                        ? [.gray.opacity(0.4), .gray.opacity(0.4)]
-                        : [.teal, .mint],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ),
-                in: Capsule()
-            )
-            .foregroundColor(.white)
-            .opacity(authVM.isLoading || email.isEmpty || password.isEmpty ? 0.6 : 1)
-            .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
-            .animation(.easeInOut, value: authVM.isLoading)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(isLoginDisabled ? .gray : .accentColor)
+            .disabled(isLoginDisabled)
 
+            // MARK: - Secondary Actions
+            VStack(spacing: 12) {
 
-            Button("Forgot password?") {
-                Task { await authVM.sendResetPasswordEmail(email: email) }
+                Button("Forgot password?") {
+                    Task {
+                        await authVM.sendResetPasswordEmail(email: email)
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .disabled(email.isEmpty)
+
+                Divider()
+
+                Button("Create an account") {
+                    onSwitchToSignup()
+                }
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
             }
-            .disabled(email.isEmpty)
 
+            // MARK: - Error
             if let error = authVM.errorMessage {
-                Text(error).foregroundColor(.red)
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
             }
 
-            Button("Create new account", action: onSwitchToSignup)
+            Spacer()
         }
         .padding()
+        .background(Color(uiColor: .systemBackground))
+        .animation(.easeInOut, value: authVM.isLoading)
     }
 }
