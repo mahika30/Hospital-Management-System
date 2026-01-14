@@ -116,7 +116,7 @@ struct ManageAvailabilityView: View {
             }
         } message: {
             if let slot = conflictSlot {
-                Text("This slot has \(slot.currentBookings) booked appointment(s):\n\n• Vikram Singh\n\nYou need to provide a cancellation reason.")
+                Text("This slot has \(slot.currentBookings ?? 0) booked appointment(s):\n\n• Vikram Singh\n\nYou need to provide a cancellation reason.")
             }
         }
         .task {
@@ -176,7 +176,7 @@ struct ManageAvailabilityView: View {
                     .foregroundStyle(.blue)
                 Text(title)
                     .font(.headline)
-                Text("\(slots.filter { $0.isAvailable }.count)/\(slots.count)")
+                Text("\(slots.filter { $0.isAvailable ?? false }.count)/\(slots.count)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -208,7 +208,7 @@ struct ManageAvailabilityView: View {
     }
     
     private func handleToggle(slot: TimeSlot, newValue: Bool) {
-        if !newValue && slot.currentBookings > 0 {
+        if !newValue && (slot.currentBookings ?? 0) > 0 {
             conflictSlot = slot
             showingConflictAlert = true
         } else {
@@ -545,10 +545,10 @@ private struct AvailabilityTimeSlotCard: View {
                 // Time and Status Icon
                 VStack(spacing: 4) {
                     Circle()
-                        .fill(slot.isAvailable ? Color.green : Color.gray)
+                        .fill((slot.isAvailable ?? false) ? Color.green : Color.gray)
                         .frame(width: 40, height: 40)
                         .overlay(
-                            Image(systemName: slot.isRunningLate ? "clock.badge.exclamationmark.fill" : "clock.fill")
+                            Image(systemName: (slot.isRunningLate ?? false) ? "clock.badge.exclamationmark.fill" : "clock.fill")
                                 .font(.caption)
                                 .foregroundStyle(.white)
                         )
@@ -570,25 +570,25 @@ private struct AvailabilityTimeSlotCard: View {
                                         .frame(width: 32, height: 32)
                                     
                                     Circle()
-                                        .trim(from: 0, to: CGFloat(slot.currentBookings) / CGFloat(slot.maxCapacity))
+                                        .trim(from: 0, to: CGFloat(slot.currentBookings ?? 0) / CGFloat(slot.maxCapacity ?? 1))
                                         .stroke(Color.green, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                                         .frame(width: 32, height: 32)
                                         .rotationEffect(.degrees(-90))
                                     
-                                    Text("\(slot.currentBookings)")
+                                    Text("\(slot.currentBookings ?? 0)")
                                         .font(.caption2)
                                         .fontWeight(.bold)
                                 }
                                 
-                                Text("/ \(slot.maxCapacity)")
+                                Text("/ \(slot.maxCapacity ?? 0)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }
                         
-                        Text(slot.isAvailable ? "Booked" : "Disabled")
+                        Text((slot.isAvailable ?? false) ? "Booked" : "Disabled")
                             .font(.caption)
-                            .foregroundStyle(slot.isAvailable ? .green : .gray)
+                            .foregroundStyle((slot.isAvailable ?? false) ? .green : .gray)
                     }
                 }
                 
@@ -596,7 +596,7 @@ private struct AvailabilityTimeSlotCard: View {
                 
                 // Toggle Only (removed three dots)
                 Toggle("", isOn: Binding(
-                    get: { slot.isAvailable },
+                    get: { slot.isAvailable ?? false },
                     set: { onToggle($0) }
                 ))
                 .labelsHidden()
@@ -604,14 +604,14 @@ private struct AvailabilityTimeSlotCard: View {
             .padding()
             
             // Running Late Banner with Delay Adjuster
-            if slot.isRunningLate && slot.delayMinutes > 0 {
+            if (slot.isRunningLate ?? false) && (slot.delayMinutes ?? 0) > 0 {
                 HStack(spacing: 12) {
                     HStack(spacing: 6) {
                         Image(systemName: "clock.badge.exclamationmark.fill")
                             .font(.caption)
                             .foregroundStyle(.yellow)
                         
-                        Text("Running \(slot.delayMinutes) min late")
+                        Text("Running \(slot.delayMinutes ?? 0) min late")
                             .font(.caption)
                             .fontWeight(.semibold)
                     }
@@ -653,10 +653,10 @@ private struct AvailabilityTimeSlotCard: View {
                 .background(Color.yellow.opacity(0.15))
             }
         }
-        .background(slot.isAvailable ? Color.green.opacity(0.05) : Color(.systemGray6))
+        .background((slot.isAvailable ?? false) ? Color.green.opacity(0.05) : Color(.systemGray6))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(slot.isRunningLate ? Color.yellow.opacity(0.5) : (slot.isAvailable ? Color.green.opacity(0.3) : Color.clear), lineWidth: 2)
+                .stroke((slot.isRunningLate ?? false) ? Color.yellow.opacity(0.5) : ((slot.isAvailable ?? false) ? Color.green.opacity(0.3) : Color.clear), lineWidth: 2)
         )
         .cornerRadius(12)
         .padding(.horizontal)
@@ -665,12 +665,12 @@ private struct AvailabilityTimeSlotCard: View {
             showingLongPressActions = true
         }
         .confirmationDialog("Slot Actions", isPresented: $showingLongPressActions, titleVisibility: .visible) {
-            if slot.isAvailable {
+            if slot.isAvailable ?? false {
                 Button("Emergency Cancel") {
                     onEmergencyCancel()
                 }
                 
-                if slot.isRunningLate {
+                if slot.isRunningLate ?? false {
                     Button("Clear Running Late") {
                         Task {
                             await viewModel.clearRunningLate(slot)
@@ -700,7 +700,7 @@ private struct CapacityEditorView: View {
         self.slot = slot
         self.onUpdate = onUpdate
         self.onCancel = onCancel
-        _capacity = State(initialValue: slot.maxCapacity)
+        _capacity = State(initialValue: slot.maxCapacity ?? 5)
     }
     
     var body: some View {
@@ -750,11 +750,11 @@ private struct CapacityEditorView: View {
                 }
             }
             
-            if slot.currentBookings > 0 {
+            if (slot.currentBookings ?? 0) > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle.fill")
                         .foregroundStyle(.orange)
-                    Text("Currently \(slot.currentBookings) patients booked")
+                    Text("Currently \(slot.currentBookings ?? 0) patients booked")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -811,7 +811,7 @@ private struct TimeSlotRow: View {
                 Text(slot.timeRange)
                     .font(.headline)
                 
-                Text("\(slot.currentBookings)/\(slot.maxCapacity) booked")
+                Text("\(slot.currentBookings ?? 0)/\(slot.maxCapacity ?? 0) booked")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -819,7 +819,7 @@ private struct TimeSlotRow: View {
             Spacer()
             
             Toggle("", isOn: Binding(
-                get: { slot.isAvailable },
+                get: { slot.isAvailable ?? false },
                 set: { newValue in
                     Task {
                         await viewModel.toggleSlot(slot, isAvailable: newValue)
