@@ -257,4 +257,40 @@ final class BookAppointmentViewModel: ObservableObject {
         // Already formatted by analytics service
         return range
     }
+
+    // MARK: - Book Appointment (Return ID for Payments)
+    func bookAppointmentAndReturnId(doctorId: UUID) async throws -> UUID {
+        guard let slot = selectedSlot else {
+            throw NSError(domain: "Slot", code: 0)
+        }
+
+        let userId = try await supabase.auth.session.user.id
+
+        struct AppointmentResponse: Decodable {
+            let id: UUID
+        }
+
+        let response: AppointmentResponse = try await supabase
+            .from("appointments")
+            .insert([
+                "patient_id": userId.uuidString,
+                "staff_id": doctorId.uuidString,
+                "time_slot_id": slot.id.uuidString,
+                "appointment_date": formatDateForQuery(selectedDate),
+                "status": "scheduled"
+            ])
+            .select("id")
+            .single()
+            .execute()
+            .value
+
+        bookingSuccess = true
+        return response.id
+    }
+
+
+}
+
+struct AppointmentIdResponse: Decodable {
+    let id: UUID
 }

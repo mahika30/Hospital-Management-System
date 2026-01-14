@@ -135,7 +135,7 @@ struct PatientDashboardView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
-                PatientHomeTabView(viewModel: viewModel)
+                PatientHomeTabView(viewModel: viewModel, selectedTab: $selectedTab)
                     .environmentObject(authVM)
             }
             .tabItem {
@@ -160,7 +160,8 @@ struct PatientDashboardView: View {
             .tag(2)
             
             NavigationStack {
-                PaymentsBillsView(patientId: viewModel.patient?.id ?? UUID())
+//                PaymentsBillsView(patientId: viewModel.patient?.id ?? UUID())
+                PaymentHistoryView(patientName: viewModel.name)
             }
             .tabItem {
                 Label("Bills", systemImage: "creditcard.fill")
@@ -178,6 +179,7 @@ struct PatientDashboardView: View {
 struct PatientHomeTabView: View {
     @ObservedObject var viewModel: PatientViewModel
     @EnvironmentObject var authVM: AuthViewModel
+    @Binding var selectedTab: Int
     
     @State private var showingProfile = false
     @State private var showQROverlay = false
