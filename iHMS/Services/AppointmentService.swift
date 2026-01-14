@@ -115,4 +115,46 @@ extension AppointmentService {
             .insert(payload)
             .execute()
     }
+
+    func fetchAvailableSlots(staffId: UUID, date: Date) async throws -> [TimeSlot] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: date)
+
+        let slots: [TimeSlot] = try await SupabaseManager.shared.client
+            .from("time_slots")
+            .select()
+            .eq("staff_id", value: staffId.uuidString)
+            .eq("slot_date", value: dateString)
+            .eq("is_available", value: true)
+            .order("start_time", ascending: true)
+            .execute()
+            .value
+        
+        return slots.filter { !$0.isFull }
+    }
+    
+    func rescheduleAppointment(
+        appointmentId: UUID,
+        newSlotId: UUID,
+        newDate: Date
+    ) async throws {
+        struct UpdateAppointment: Encodable {
+            let time_slot_id: UUID
+            let appointment_date: Date
+            let status: String
+        }
+        
+        let payload = UpdateAppointment(
+            time_slot_id: newSlotId,
+            appointment_date: newDate,
+            status: "rescheduled"
+        )
+        
+        try await SupabaseManager.shared.client
+            .from("appointments")
+            .update(payload)
+            .eq("id", value: appointmentId.uuidString)
+            .execute()
+    }
 }
