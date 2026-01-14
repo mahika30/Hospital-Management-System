@@ -482,7 +482,7 @@ private extension BookAppointmentView {
 
                     }
                 } label: {
-                    Text("Pay ₹\(consultationFee)")
+                    Text("Pay ₹\(consultationFee) & Confirm")
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.green)

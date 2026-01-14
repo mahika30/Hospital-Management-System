@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct PaymentHistoryView: View {
-
+    let patientName: String
     @StateObject private var viewModel = PaymentHistoryViewModel()
 
     var body: some View {
@@ -30,7 +30,7 @@ struct PaymentHistoryView: View {
                 }
                 else {
                     List(viewModel.payments) { payment in
-                        PaymentRow(payment: payment)
+                        PaymentRow(payment: payment,patientName: patientName)
                     }
                 }
             }

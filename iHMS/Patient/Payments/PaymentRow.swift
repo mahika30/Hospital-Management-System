@@ -10,7 +10,7 @@ import SwiftUI
 struct PaymentRow: View {
 
     let payment: Payment
-    @EnvironmentObject var authVM: AuthViewModel
+    let patientName: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -55,7 +55,7 @@ struct PaymentRow: View {
                     item: ReceiptPDFGenerator.generate(
                         receipt: PaymentReceipt(
                             hospitalName: "iHMS Hospital",
-                            patientName: "Patient",
+                            patientName: patientName,
                             amount: payment.amount,
                             status: payment.status,
                             transactionId: payment.transaction_id

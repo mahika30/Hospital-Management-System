@@ -153,11 +153,14 @@ struct PatientDashboardView: View {
                 EmptyView()
             }
             NavigationLink(
-                destination: PaymentHistoryView(),
+                destination: PaymentHistoryView(
+                    patientName: viewModel.name   
+                ),
                 isActive: $navigateToPayments
             ) {
                 EmptyView()
             }
+
 
 
             ZStack {
