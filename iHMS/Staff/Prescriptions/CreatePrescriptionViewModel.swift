@@ -33,11 +33,41 @@ class CreatePrescriptionViewModel: ObservableObject {
     let patient: Patient
     let appointment: Appointment
     let staffId: UUID
+    var existingPrescriptionId: UUID?
+    var isEditMode: Bool { existingPrescriptionId != nil }
     
-    init(patient: Patient, appointment: Appointment, staffId: UUID) {
+    init(patient: Patient, appointment: Appointment, staffId: UUID, existingPrescription: Prescription? = nil) {
         self.patient = patient
         self.appointment = appointment
         self.staffId = staffId
+        
+        // Load existing prescription data if available
+        if let prescription = existingPrescription {
+            self.existingPrescriptionId = prescription.id
+            self.diagnosis = prescription.diagnosis ?? ""
+            self.notes = prescription.notes ?? ""
+            self.followUpNotes = prescription.followUpNotes ?? ""
+            
+            // Parse follow-up date
+            if let dateString = prescription.followUpDate {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withFullDate]
+                self.followUpDate = formatter.date(from: dateString)
+            }
+            
+            // Load medicines
+            if let medicines = prescription.medicines {
+                self.medicines = medicines.map { med in
+                    MedicineInput(
+                        name: med.medicineName,
+                        dosage: med.dosage,
+                        frequency: med.frequency,
+                        duration: med.duration,
+                        instructions: med.instructions ?? ""
+                    )
+                }
+            }
+        }
     }
     
     func addMedicine(_ medicine: MedicineInput) {
@@ -49,8 +79,8 @@ class CreatePrescriptionViewModel: ObservableObject {
     }
     
     func savePrescription() async -> Bool {
-        guard !medicines.isEmpty else {
-            errorMessage = "Please add at least one medicine"
+        guard !diagnosis.isEmpty || !medicines.isEmpty else {
+            errorMessage = "Please enter diagnosis notes or add at least one medicine"
             return false
         }
         
@@ -63,6 +93,13 @@ class CreatePrescriptionViewModel: ObservableObject {
                 let id: UUID
             }
             
+            // Check if we already have an existing prescription ID from init
+            if let existingId = existingPrescriptionId {
+                print("✅ Editing existing prescription: \(existingId)")
+                return await updatePrescription(prescriptionId: existingId)
+            }
+            
+            // Otherwise check database for existing prescription
             let existingResponse: [PrescriptionIdResponse] = try await SupabaseManager.shared.client
                 .from("prescriptions")
                 .select("id")
@@ -73,6 +110,7 @@ class CreatePrescriptionViewModel: ObservableObject {
             if let existing = existingResponse.first {
                 // Update existing prescription
                 print("✅ Found existing prescription: \(existing.id)")
+                existingPrescriptionId = existing.id
                 return await updatePrescription(prescriptionId: existing.id)
             } else {
                 // Create new prescription

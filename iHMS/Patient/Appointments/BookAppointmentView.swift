@@ -21,6 +21,7 @@ struct BookAppointmentView: View {
         ScrollView {
             VStack(spacing: 20) {
                 doctorCard
+                aiSuggestionsSection
                 dateSection
                 timeSlotSection
                 
@@ -72,6 +73,7 @@ struct BookAppointmentView: View {
                 staffId: selectedDoctor.id,
                 date: viewModel.selectedDate
             )
+            await viewModel.loadAISuggestions(forDoctor: selectedDoctor.id)
         }
     }
 }
@@ -193,6 +195,192 @@ private extension BookAppointmentView {
 }
 
 private extension BookAppointmentView {
+    
+    var aiSuggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .font(.headline)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple, .blue, .cyan],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                
+                Text("AI Recommended Slots")
+                    .font(.headline)
+                
+                Spacer()
+                
+                if viewModel.isLoadingSuggestions {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
+            }
+            
+            if viewModel.isLoadingSuggestions {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        ProgressView()
+                        Text("Finding best slots for you...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding()
+            } else if viewModel.suggestedSlots.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "sparkles.rectangle.stack")
+                        .font(.system(size: 30))
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Book a few appointments to get personalized suggestions")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(viewModel.suggestedSlots) { suggestion in
+                            Button {
+                                // Parse date and load that doctor's slots
+                                if let date = parseSuggestionDate(suggestion.date) {
+                                    viewModel.selectedDate = date
+                                    Task {
+                                        await viewModel.loadSlots(
+                                            staffId: suggestion.staffId,
+                                            date: date
+                                        )
+                                        // Auto-select the matching slot after loading
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                            if let matchingSlot = viewModel.timeSlots.first(where: {
+                                                $0.timeRange == suggestion.timeRange
+                                            }) {
+                                                viewModel.selectedSlot = matchingSlot
+                                            }
+                                        }
+                                    }
+                                }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    // Badge
+                                    HStack(spacing: 4) {
+                                        if suggestion.reason.contains("preferred") {
+                                            Image(systemName: "star.fill")
+                                                .font(.caption2)
+                                            Text("Your Doctor")
+                                                .font(.caption2)
+                                                .fontWeight(.semibold)
+                                        } else {
+                                            Image(systemName: "sparkles")
+                                                .font(.caption2)
+                                            Text("Recommended")
+                                                .font(.caption2)
+                                                .fontWeight(.semibold)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(suggestion.reason.contains("preferred") ? Color.purple.opacity(0.15) : Color.blue.opacity(0.15))
+                                    )
+                                    .foregroundStyle(suggestion.reason.contains("preferred") ? .purple : .blue)
+                                    
+                                    // Doctor info
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(suggestion.staffName)
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+                                        
+                                        Text(formatSuggestionDate(suggestion.date))
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    // Time
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "clock.fill")
+                                            .font(.caption)
+                                            .foregroundStyle(.blue)
+                                        
+                                        Text(suggestion.timeRange)
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.primary)
+                                    }
+                                    
+                                    // Reason
+                                    Text(suggestion.reason)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                .frame(width: 180)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .strokeBorder(
+                                            LinearGradient(
+                                                colors: suggestion.reason.contains("preferred") 
+                                                    ? [.purple.opacity(0.3), .blue.opacity(0.3)]
+                                                    : [.blue.opacity(0.2), .cyan.opacity(0.2)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+    
+    private func parseSuggestionDate(_ dateString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: dateString)
+    }
+    
+    private func formatSuggestionDate(_ dateString: String) -> String {
+        guard let date = parseSuggestionDate(dateString) else { return dateString }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
+    }
+}
+
+private extension BookAppointmentView {
 
     var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -276,7 +464,7 @@ private extension BookAppointmentView {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         
-                                        Text("\(slot.availableSlots)/\(slot.maxCapacity) available")
+                                        Text("\(slot.availableSlots)/\(slot.maxCapacity ?? 0) available")
                                             .font(.caption)
                                             .foregroundStyle(slot.availableSlots > 3 ? .green : (slot.availableSlots > 0 ? .orange : .red))
                                     }

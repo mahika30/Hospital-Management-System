@@ -26,11 +26,6 @@ struct PrescriptionDetailView: View {
                 // Medicines
                 medicinesSection
                 
-                // Notes
-                if let notes = prescription.notes {
-                    notesCard(notes)
-                }
-                
                 // Follow-up
                 if let followUpDate = prescription.followUpDate {
                     followUpCard(followUpDate, notes: prescription.followUpNotes)
@@ -131,20 +126,6 @@ struct PrescriptionDetailView: View {
                 }
             }
         }
-    }
-    
-    private func notesCard(_ notes: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Additional Notes", systemImage: "note.text")
-                .font(.headline)
-            
-            Text(notes)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
     }
     
     private func followUpCard(_ date: String, notes: String?) -> some View {

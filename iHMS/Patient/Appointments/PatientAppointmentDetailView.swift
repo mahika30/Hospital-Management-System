@@ -60,19 +60,14 @@ struct PatientAppointmentDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Appointment Info
+            VStack(spacing: 14) {
+                // Combined Appointment Info Card
                 appointmentInfoCard
-                
-                // Doctor Info
-                if let staff = appointment.staff {
-                    doctorInfoCard(staff)
-                }
                 
                 // Prescription Section
                 prescriptionSection
             }
-            .padding()
+            .padding(16)
         }
         .navigationTitle("Appointment Details")
         .navigationBarTitleDisplayMode(.inline)
@@ -82,106 +77,104 @@ struct PatientAppointmentDetailView: View {
     }
     
     private var appointmentInfoCard: some View {
-        VStack(spacing: 20) {
-            // Status Badge - Prominent at top
-            VStack(spacing: 8) {
-                Image(systemName: statusIcon)
-                    .font(.system(size: 48))
-                    .foregroundColor(statusColor)
-                Text(appointment.appointmentStatus.displayName)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(statusColor)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(statusColor.opacity(0.1))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(statusColor.opacity(0.3), lineWidth: 2)
-            )
-            
-            // Date and Time Info
-            VStack(spacing: 12) {
-                HStack {
-                    Label {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Date")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(appointment.formattedDate)
-                                .font(.headline)
-                        }
-                    } icon: {
-                        Image(systemName: "calendar")
+        VStack(spacing: 0) {
+            // Doctor Info at top
+            if let staff = appointment.staff {
+                HStack(spacing: 14) {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 56, height: 56)
+                        .overlay(
+                            Text(staff.initials)
+                                .foregroundColor(.white)
+                                .font(.system(size: 20, weight: .bold))
+                        )
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Dr. \(staff.fullName)")
                             .font(.title3)
-                            .foregroundColor(.blue)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        if let specialization = staff.specialization {
+                            Text(specialization)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    
                     Spacer()
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                
-                if let slot = appointment.timeSlot {
-                    HStack {
-                        Label {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Time")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(slot.timeRange)
-                                    .font(.headline)
-                            }
-                        } icon: {
-                            Image(systemName: "clock")
-                                .font(.title3)
-                                .foregroundColor(.blue)
-                        }
-                        Spacer()
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                }
+                .padding(20)
             }
             
-            // Show consultation status message
-            if appointment.appointmentStatus == .inProgress || appointment.appointmentStatus == .confirmed {
-                HStack {
-                    Image(systemName: "stethoscope")
-                        .foregroundColor(.orange)
-                    Text("Consultation in progress...")
-                        .font(.subheadline)
-                        .foregroundColor(.orange)
-                        .fontWeight(.medium)
+            Divider()
+                .padding(.horizontal, 20)
+            
+            // Status, Date and Time in one section
+            VStack(spacing: 14) {
+                // Status Badge
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: statusIcon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    
+                    Text(appointment.appointmentStatus.displayName)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(statusColor)
+                    
                     Spacer()
                 }
-                .padding()
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(12)
-            } else if appointment.appointmentStatus == .completed {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Consultation completed")
-                        .font(.subheadline)
-                        .foregroundColor(.green)
-                        .fontWeight(.medium)
-                    Spacer()
+                
+                // Date and Time Info in one line
+                HStack(spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 15))
+                            .foregroundColor(.accentColor)
+                        
+                        Text(appointment.formattedDate)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(.systemGray6))
+                    )
+                    
+                    if let slot = appointment.timeSlot {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 15))
+                                .foregroundColor(.accentColor)
+                            
+                            Text(slot.timeRange)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color(.systemGray6))
+                        )
+                    }
                 }
-                .padding()
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(12)
             }
+            .padding(20)
         }
-        .padding()
-        .background(Color(.systemBackground))
+        .background(Color(.systemGray6))
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
     
     private var statusIcon: String {
@@ -196,43 +189,23 @@ struct PatientAppointmentDetailView: View {
         }
     }
     
-    private func doctorInfoCard(_ staff: Staff) -> some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Color.blue.gradient)
-                .frame(width: 50, height: 50)
-                .overlay {
-                    Text(staff.initials)
-                        .foregroundColor(.white)
-                        .fontWeight(.semibold)
-                }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Dr. \(staff.fullName)")
-                    .font(.headline)
-                if let specialization = staff.specialization {
-                    Text(specialization)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-    
     private var prescriptionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Prescription")
                 .font(.headline)
+                .fontWeight(.bold)
             
             if viewModel.isLoadingPrescription {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                )
             } else if let prescription = viewModel.prescription {
                 prescriptionContent(prescription)
             } else {
@@ -262,9 +235,15 @@ struct PatientAppointmentDetailView: View {
             // Medicines
             if let medicines = prescription.medicines, !medicines.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Prescribed Medicines", systemImage: "pills.fill")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                    HStack(spacing: 8) {
+                        Image(systemName: "pills.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
+                        
+                        Text("Prescribed Medicines")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                    }
                     
                     ForEach(medicines) { medicine in
                         MedicineCard(medicine: medicine)
@@ -272,90 +251,81 @@ struct PatientAppointmentDetailView: View {
                 }
             }
             
-            // Notes
-            if let notes = prescription.notes {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Additional Notes", systemImage: "note.text")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Text(notes)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            
             // Follow-up
             if let followUpDate = prescription.followUpDate {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Follow-up Appointment Recommended", systemImage: "calendar.badge.checkmark")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.green)
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar.badge.checkmark")
+                            .font(.system(size: 14))
+                            .foregroundColor(.green)
+                        
+                        Text("Follow-up Recommended")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.green)
+                    }
                     
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Recommended Date")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(formatFollowUpDate(followUpDate))
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                        }
-                        Spacer()
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Recommended Date")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(formatFollowUpDate(followUpDate))
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     }
                     
                     if let notes = prescription.followUpNotes, !notes.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Doctor's Notes")
-                                .font(.caption)
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
                             Text(notes)
-                                .font(.subheadline)
+                                .font(.caption)
                                 .foregroundColor(.primary)
                         }
-                        .padding(.top, 4)
                     }
                     
                     Text("Please schedule your follow-up appointment")
-                        .font(.caption)
-                        .foregroundColor(.green)
+                        .font(.caption2)
+                        .foregroundColor(.green.opacity(0.8))
                         .padding(.top, 4)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+                .padding(14)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.green.opacity(0.1))
+                        .fill(Color.green.opacity(0.08))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.green.opacity(0.25), lineWidth: 1)
                 )
             }
         }
     }
     
     private var noPrescriptionView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 48))
-                .foregroundColor(.gray)
-            Text("No Prescription")
+        VStack(spacing: 14) {
+            Image(systemName: appointment.appointmentStatus == .scheduled ? "calendar.badge.clock" : "doc.text")
+                .font(.system(size: 52))
+                .foregroundColor(.secondary)
+            
+            Text(appointment.appointmentStatus == .scheduled ? "Appointment Not Started Yet" : "No Prescription")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            
+            Text(appointment.appointmentStatus == .scheduled ? "The prescription will be available after your appointment" : "The doctor hasn't added a prescription for this appointment yet")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Text("The doctor hasn't added a prescription for this appointment yet")
-                .font(.caption)
-                .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+                .padding(.horizontal)
         }
         .frame(maxWidth: .infinity)
-        .padding()
+        .padding(.vertical, 32)
+        .padding(.horizontal, 20)
         .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .cornerRadius(16)
     }
     
     private var statusColor: Color {

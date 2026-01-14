@@ -56,7 +56,7 @@ struct CompletedAppointmentsView: View {
                 .listStyle(.insetGrouped)
             }
         }
-        .navigationTitle("Completed Appointments")
+        .navigationTitle("Past Appointments")
         .navigationBarTitleDisplayMode(.large)
         .refreshable {
             await viewModel.refreshAppointments()

@@ -154,10 +154,10 @@ struct EditPrescriptionView: View {
     
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Additional Notes")
+            Text("Internal Notes")
                 .font(.headline)
             
-            TextField("Enter additional notes", text: $viewModel.notes, axis: .vertical)
+            TextField("Enter internal notes (doctor only)", text: $viewModel.notes, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...6)
         }

@@ -14,8 +14,20 @@ final class BookAppointmentViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var bookingSuccess = false
     @Published var errorMessage: String?
+    @Published var suggestedSlots: [SuggestedSlot] = []
+    @Published var isLoadingSuggestions = false
 
     private let supabase = SupabaseManager.shared.client
+    
+    struct SuggestedSlot: Identifiable {
+        let id: UUID
+        let staffId: UUID
+        let staffName: String
+        let date: String
+        let timeRange: String
+        let reason: String
+        let score: Double
+    }
 
     // MARK: - Load Slots
     func loadSlots(staffId: UUID, date: Date) async {
@@ -97,5 +109,152 @@ final class BookAppointmentViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+    
+    // MARK: - AI Slot Suggestions
+    func loadAISuggestions(forDoctor staffId: UUID) async {
+        isLoadingSuggestions = true
+        suggestedSlots = []
+        
+        do {
+            // Get authenticated patient ID
+            guard let patientId = try? await supabase.auth.session.user.id else {
+                print("❌ Not authenticated")
+                isLoadingSuggestions = false
+                return
+            }
+            
+            print("🤖 Loading AI suggestions for patient: \(patientId), doctor: \(staffId)")
+            
+            // Fetch analytics data
+            let (appointments, slots, staff) = try await AnalyticsService.shared.fetchAnalyticsData()
+            
+            // Filter appointments for THIS doctor only (all patients)
+            let doctorAppointments = appointments.filter { $0.staffId == staffId }
+            
+            // Filter slots for selected doctor only
+            let doctorSlots = slots.filter { $0.staffId == staffId }
+            
+            print("📊 Analytics data: \(doctorAppointments.count) appointments for this doctor, \(doctorSlots.count) available slots")
+            
+            // Get AI suggestions using THIS doctor's appointment history
+            let suggestions = AnalyticsService.shared.suggestAppointmentSlots(
+                for: patientId,
+                history: doctorAppointments,
+                slots: doctorSlots,
+                staff: staff,
+                limit: 5
+            )
+            
+            print("💡 Raw AI suggestions: \(suggestions)")
+            
+            // If no personalized suggestions (new patient), show general best slots
+            if suggestions.count == 1 && suggestions[0].contains("No slots available") {
+                print("⚠️ No slots available")
+                isLoadingSuggestions = false
+                return
+            }
+            
+            // Parse suggestions into structured data
+            var parsedSlots: [SuggestedSlot] = []
+            
+            for (index, suggestion) in suggestions.enumerated() {
+                // Parse format: "2026-01-15 @ 10:00 AM - 11:00 AM with Dr. John Doe (⭐ Your Doctor)"
+                let components = suggestion.components(separatedBy: " @ ")
+                guard components.count == 2 else {
+                    print("⚠️ Failed to parse suggestion: \(suggestion)")
+                    continue
+                }
+                
+                let date = components[0].trimmingCharacters(in: .whitespaces)
+                let rest = components[1].components(separatedBy: " with ")
+                guard rest.count == 2 else {
+                    print("⚠️ Failed to parse doctor info: \(suggestion)")
+                    continue
+                }
+                
+                let timeRange = rest[0].trimmingCharacters(in: .whitespaces)
+                let doctorInfo = rest[1].trimmingCharacters(in: .whitespaces)
+                
+                // Extract doctor name and reason
+                var doctorName = doctorInfo
+                var reason = "Recommended for you"
+                
+                if doctorInfo.contains("(⭐ Your Doctor)") {
+                    doctorName = doctorInfo.replacingOccurrences(of: " (⭐ Your Doctor)", with: "")
+                    reason = "Your preferred doctor"
+                }
+                
+                print("🔍 Looking for slot: date=\(date), time=\(timeRange), doctor=\(doctorName)")
+                
+                // Find matching staff first
+                guard let matchingStaff = staff.first(where: { $0.fullName == doctorName }) else {
+                    print("⚠️ Staff not found: \(doctorName)")
+                    continue
+                }
+                
+                // Convert time range to match database format
+                // "10:00 AM - 11:00 AM" needs to match slots with startTime="10:00:00", endTime="11:00:00"
+                let timeParts = timeRange.components(separatedBy: " - ")
+                guard timeParts.count == 2 else {
+                    print("⚠️ Invalid time range format: \(timeRange)")
+                    continue
+                }
+                
+                // Find matching slot with flexible time matching
+                if let matchingSlot = slots.first(where: { slot in
+                    let dateMatches = slot.slotDate == date
+                    // Format slot times for comparison
+                    let slotTimeRange = formatTimeFromDB(slot.startTime, slot.endTime)
+                    let timeMatches = slotTimeRange == timeRange
+                    
+                    if dateMatches && timeMatches && slot.staffId == matchingStaff.id {
+                        return true
+                    }
+                    return false
+                }) {
+                    
+                    parsedSlots.append(SuggestedSlot(
+                        id: matchingSlot.id,
+                        staffId: matchingStaff.id,
+                        staffName: doctorName,
+                        date: date,
+                        timeRange: timeRange,
+                        reason: reason,
+                        score: Double(5 - index)
+                    ))
+                    
+                    print("✅ Matched slot: \(date) @ \(timeRange)")
+                } else {
+                    print("⚠️ No matching slot found for: \(date) @ \(timeRange) with \(doctorName)")
+                }
+            }
+            
+            suggestedSlots = parsedSlots
+            print("✅ Loaded \(suggestedSlots.count) AI suggestions")
+            
+        } catch {
+            print("❌ Error loading AI suggestions: \(error)")
+        }
+        
+        isLoadingSuggestions = false
+    }
+    
+    private func formatTimeFromDB(_ startTime: String, _ endTime: String) -> String {
+        // Convert "10:00:00" to "10:00 AM"
+        func convertTime(_ time: String) -> String {
+            let components = time.split(separator: ":")
+            guard let hour = Int(components[0]) else { return time }
+            let period = hour >= 12 ? "PM" : "AM"
+            let displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour)
+            return "\(displayHour):00 \(period)"
+        }
+        
+        return "\(convertTime(startTime)) - \(convertTime(endTime))"
+    }
+    
+    private func formatTimeRange(_ range: String) -> String {
+        // Already formatted by analytics service
+        return range
     }
 }
