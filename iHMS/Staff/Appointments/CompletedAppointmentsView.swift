@@ -56,7 +56,7 @@ struct CompletedAppointmentsView: View {
                 .listStyle(.insetGrouped)
             }
         }
-        .navigationTitle("Completed Appointments")
+        .navigationTitle("Past Appointments")
         .navigationBarTitleDisplayMode(.large)
         .refreshable {
             await viewModel.refreshAppointments()
@@ -68,6 +68,68 @@ struct CompletedAppointmentsView: View {
 }
 
 struct CompletedAppointmentRow: View {
+    let appointment: Appointment
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Circle()
+                    .fill(Color.green.gradient)
+                    .frame(width: 50, height: 50)
+                    .overlay {
+                        if let patient = appointment.patient {
+                            Text(patient.initials)
+                                .foregroundColor(.white)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text("?")
+                                .foregroundColor(.white)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .onAppear {
+                        print("🔍 Row rendering - Patient: \(appointment.patient?.fullName ?? "nil"), ID: \(appointment.id)")
+                    }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(appointment.patient?.fullName ?? "No Name (ID: \(appointment.patientId.uuidString.prefix(8))...)")
+                        .font(.headline)
+                    if let patient = appointment.patient {
+                        Text("Age: \(patient.age) • \(patient.gender ?? "N/A")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Appointment: \(appointment.id.uuidString.prefix(8))...")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    if let slot = appointment.timeSlot {
+                        Text(slot.timeRange)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Text("Completed")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.2))
+                        .foregroundColor(.green)
+                        .cornerRadius(6)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct CompletedAppointmentDateRow: View {
     let appointment: Appointment
     
     var body: some View {
@@ -101,12 +163,12 @@ struct CompletedAppointmentRow: View {
             }
             
             HStack(spacing: 16) {
-                Label(appointment.appointmentDate, systemImage: "calendar")
+                Label(appointment.formattedDate, systemImage: "calendar")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                if let time = appointment.appointmentTime {
-                    Label(time, systemImage: "clock")
+                if let slot = appointment.timeSlot {
+                    Label(slot.timeRange, systemImage: "clock")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }

@@ -11,13 +11,44 @@ struct AdminHomeTab: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                // Stats Filter
+                HStack {
+                    Text("Overview")
+                        .font(.headline)
+                        .foregroundColor(Theme.primaryText)
+                    
+                    Spacer()
+                    
+                    Menu {
+                        Picker("Range", selection: $dashboardVM.statsTimeRange) {
+                            ForEach(StatsTimeRange.allCases) { range in
+                                Text(range.rawValue).tag(range)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(dashboardVM.statsTimeRange.rawValue)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                        }
+                        .foregroundColor(Theme.secondaryText)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Theme.surface)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.horizontal)
+
                 LazyVGrid(columns: gridColumns, spacing: 16) {
                     SummaryCard(
                         title: "Patients",
                         count: dashboardVM.patientsCount,
                         iconName: "person.2.fill",
                         accent: .blue,
-                        deltaText: "+12%"
+                        deltaText: dashboardVM.patientsDelta
                     )
 
                     SummaryCard(
@@ -25,7 +56,7 @@ struct AdminHomeTab: View {
                         count: dashboardVM.appointmentsCount,
                         iconName: "calendar.badge.clock",
                         accent: .green,
-                        deltaText: "+8%"
+                        deltaText: dashboardVM.appointmentsDelta
                     )
                 }
                 .padding(.horizontal)

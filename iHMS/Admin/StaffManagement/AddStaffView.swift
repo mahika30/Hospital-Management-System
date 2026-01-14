@@ -140,21 +140,17 @@ struct AddStaffView: View {
         errorMessage = nil
 
         do {
-            // Step 1: Send OTP invitation
             try await supabase.auth.signInWithOTP(
                 email: email,
                 redirectTo: URL(string: "ihms://auth-callback"),
                 data: [
                     "full_name": .string(fullName),
-                    "role": .string("staff"),
+//                    "role": .string("staff"),
                     "department_id": .string(department.id)
                 ]
             )
             
-            // Step 2: Create staff record in the database
-            // Note: We need to create the user first, then create their staff record
-            // For now, we'll create a staff record with a temporary ID
-            // This should ideally be done via a database trigger when the user confirms their email
+    
             
             struct StaffInsert: Encodable {
                 let full_name: String
@@ -181,12 +177,9 @@ struct AddStaffView: View {
                 .select()
                 .execute()
                 .value
-            
-            // Step 3: Create default time slots for the new doctor
             if let newStaff = insertedStaff.first {
                 print("✅ Staff created with ID: \(newStaff.id)")
                 
-                // Create slots for next 2 weeks (weekdays only)
                 let today = Date()
                 let endDate = Calendar.current.date(byAdding: .day, value: 14, to: today) ?? today
                 try await staffService.createTimeSlotsForDateRange(
@@ -202,13 +195,11 @@ struct AddStaffView: View {
             
             showSuccess = true
             
-            // Dismiss after a short delay to show success
             try? await Task.sleep(nanoseconds: 1_500_000_000)
             dismiss()
 
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ Error inviting doctor: \(error)")
         }
 
         isLoading = false
