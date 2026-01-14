@@ -1,33 +1,33 @@
-//
-//  AuthContainerView.swift
-//  iHMS
-//
-//  Created by Hargun Singh on 05/01/26.
-//
-
 import SwiftUI
+struct AuthSheetContainer: View {
 
-struct AuthContainerView: View {
+    let initialMode: LandingView.AuthMode
+    @State private var isLogin: Bool
 
-    @State private var showLogin = true
+    init(initialMode: LandingView.AuthMode) {
+        self.initialMode = initialMode
+        self._isLogin = State(initialValue: initialMode == .login)
+    }
 
     var body: some View {
-        NavigationStack {
-            VStack {
-                if showLogin {
-                    LoginView(
-                        onSwitchToSignup: {
-                            showLogin = false
-                        }
-                    )
-                } else {
-                    SignupView(
-                        onSwitchToLogin: {
-                            showLogin = true
-                        }
-                    )
-                }
+        ZStack {
+
+            if isLogin {
+                LoginView(onSwitchToSignup: {
+                    withAnimation(.spring()) {
+                        isLogin = false
+                    }
+                })
+                .transition(.move(edge: .leading).combined(with: .opacity))
+            } else {
+                SignupView(onSwitchToLogin: {
+                    withAnimation(.spring()) {
+                        isLogin = true
+                    }
+                })
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isLogin)
     }
 }
