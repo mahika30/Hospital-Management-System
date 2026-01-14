@@ -447,6 +447,9 @@ private extension BookAppointmentView {
 
                             Task {
                                 do {
+                                    // ✅ CAPTURE SLOT TIME FIRST
+                                    bookedSlotTime = viewModel.selectedSlot?.timeRange
+
                                     let appointmentId = try await viewModel
                                         .bookAppointmentAndReturnId(doctorId: selectedDoctor.id)
 
@@ -473,6 +476,7 @@ private extension BookAppointmentView {
                                     paymentCompleted = false
                                 }
                             }
+
 
 
 
