@@ -15,7 +15,7 @@ class PastAppointmentsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let patientId: UUID
+    let patientId: UUID
     
     init(patientId: UUID) {
         self.patientId = patientId

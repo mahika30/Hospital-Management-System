@@ -50,11 +50,7 @@ struct PastAppointmentsView: View {
             } else {
                 List {
                     ForEach(viewModel.appointments) { appointment in
-                        NavigationLink {
-                            PatientAppointmentDetailView(appointment: appointment)
-                        } label: {
-                            PastAppointmentRow(appointment: appointment)
-                        }
+                        PastAppointmentRow(appointment: appointment, patientId: viewModel.patientId)
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -76,6 +72,10 @@ struct PastAppointmentsView: View {
 
 struct PastAppointmentRow: View {
     let appointment: Appointment
+    let patientId: UUID
+    
+    @State private var showFeedbackSheet = false
+    @State private var hasFeedback = false
     
     var statusColor: Color {
         switch appointment.status.lowercased() {
@@ -101,53 +101,147 @@ struct PastAppointmentRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(appointment.staff?.fullName ?? "Unknown Doctor")
-                        .font(.headline)
+            NavigationLink {
+                PatientAppointmentDetailView(appointment: appointment)
+            } label: {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(appointment.staff?.fullName ?? "Unknown Doctor")
+                                .font(.headline)
+                            
+                            if let designation = appointment.staff?.designation {
+                                Text(designation)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: statusIcon)
+                                .font(.caption)
+                            Text(appointment.status.capitalized)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(statusColor)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(statusColor.opacity(0.1))
+                        .cornerRadius(8)
+                    }
                     
-                    if let designation = appointment.staff?.designation {
-                        Text(designation)
+                    HStack(spacing: 16) {
+                        Label(appointment.formattedDate, systemImage: "calendar")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                        
+                        if let slot = appointment.timeSlot {
+                            Label(slot.timeRange, systemImage: "clock")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    if let reason = appointment.reasonForVisit {
+                        Text(reason)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
                     }
                 }
-                
-                Spacer()
-                
-                HStack(spacing: 4) {
-                    Image(systemName: statusIcon)
-                        .font(.caption)
-                    Text(appointment.status.capitalized)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                .foregroundColor(statusColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(statusColor.opacity(0.1))
-                .cornerRadius(8)
             }
             
-            HStack(spacing: 16) {
-                Label(appointment.formattedDate, systemImage: "calendar")
+            // Feedback Button - Show for all past appointments unless cancelled
+            if appointment.status.lowercased() != "cancelled" && !hasFeedback {
+                Button(action: {
+                    showFeedbackSheet = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 14))
+                        Text("Rate Appointment")
+                            .fontWeight(.semibold)
+                    }
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                if let slot = appointment.timeSlot {
-                    Label(slot.timeRange, systemImage: "clock")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.blue, .purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
                 }
+                .buttonStyle(.plain)
+                .padding(.top, 8)
             }
             
-            if let reason = appointment.reasonForVisit {
-                Text(reason)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 4)
+            // Show feedback submitted indicator
+            if hasFeedback {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 14))
+                    Text("Feedback Submitted")
+                        .fontWeight(.semibold)
+                }
+                .font(.subheadline)
+                .foregroundColor(.green)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.green.opacity(0.12))
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                )
+                .padding(.top, 8)
             }
         }
         .padding(.vertical, 8)
+        .sheet(isPresented: $showFeedbackSheet) {
+            PatientFeedbackView(appointment: appointment, patientId: patientId) {
+                // Mark as submitted immediately
+                hasFeedback = true
+            }
+        }
+        .task {
+            await checkFeedbackStatus()
+        }
+    }
+    
+    // Check if feedback already exists
+    private func checkFeedbackStatus() async {
+        let feedbackService = FeedbackService()
+        do {
+            hasFeedback = try await feedbackService.checkFeedbackExists(
+                appointmentId: appointment.id,
+                submittedBy: .patient
+            )
+        } catch {
+            print("Error checking feedback status: \(error)")
+        }
     }
 }

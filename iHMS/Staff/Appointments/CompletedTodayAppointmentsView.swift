@@ -58,7 +58,7 @@ struct CompletedTodayAppointmentsView: View {
                     )
                 }
             } label: {
-                CompletedAppointmentRow(appointment: appointment)
+                CompletedAppointmentRow(appointment: appointment, staffId: viewModel.staffId)
             }
         }
         .listStyle(.plain)
