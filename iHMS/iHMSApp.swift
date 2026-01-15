@@ -19,9 +19,13 @@ struct iHMSApp: App {
                 .environmentObject(authVM)
                 .onOpenURL { url in
                     Task {
-                        print("AUTH CALLBACK URL:", url.absoluteString)
-                        await authVM.handleAuthCallback(url: url)
+                        // ✅ Centralized Deep Link Handler
+                        await authVM.handleDeepLink(url: url)
                     }
+                }
+                .onAppear {
+                    // Temporary Analytics Debug
+                    AnalyticsService.shared.debugAnalytics()
                 }
         }
     }

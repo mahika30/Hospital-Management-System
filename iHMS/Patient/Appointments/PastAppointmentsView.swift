@@ -50,10 +50,17 @@ struct PastAppointmentsView: View {
             } else {
                 List {
                     ForEach(viewModel.appointments) { appointment in
-                        PastAppointmentRow(appointment: appointment)
+                        NavigationLink {
+                            PatientAppointmentDetailView(appointment: appointment)
+                        } label: {
+                            PastAppointmentRow(appointment: appointment)
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
+                .refreshable {
+                    await viewModel.loadPastAppointments()
+                }
             }
         }
         .navigationTitle("Past Appointments")
@@ -123,12 +130,12 @@ struct PastAppointmentRow: View {
             }
             
             HStack(spacing: 16) {
-                Label(appointment.appointmentDate, systemImage: "calendar")
+                Label(appointment.formattedDate, systemImage: "calendar")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                if let time = appointment.appointmentTime {
-                    Label(time, systemImage: "clock")
+                if let slot = appointment.timeSlot {
+                    Label(slot.timeRange, systemImage: "clock")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }

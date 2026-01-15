@@ -21,11 +21,35 @@ struct TimeSlotCard: View {
     @State private var offset: CGFloat = 0
     @State private var showingSwipeActions = false
     
+    private var clockIcon: String {
+        (slot.isRunningLate ?? false) ? "clock.badge.exclamationmark.fill" : "clock.fill"
+    }
+    
+    private var isSlotAvailable: Bool {
+        slot.isAvailable ?? false
+    }
+    
+    private var currentBookings: Int {
+        slot.currentBookings ?? 0
+    }
+    
+    private var maxCapacity: Int {
+        slot.maxCapacity ?? 0
+    }
+    
+    private var delayMinutes: Int {
+        slot.delayMinutes ?? 0
+    }
+    
+    private var isRunningLate: Bool {
+        slot.isRunningLate ?? false
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
                 HStack(spacing: 12) {
-                    Image(systemName: slot.isRunningLate ? "clock.badge.exclamationmark.fill" : "clock.fill")
+                    Image(systemName: clockIcon)
                         .font(.title3)
                         .foregroundStyle(statusColor.gradient)
                     
@@ -42,14 +66,14 @@ struct TimeSlotCard: View {
                 
                 Spacer()
                 
-                if slot.isAvailable {
+                if isSlotAvailable {
                     Button(action: {
                         showingCapacityEditor = true
                         hapticFeedback()
                     }) {
                         CapacityBadge(
-                            current: slot.currentBookings,
-                            maximum: slot.maxCapacity,
+                            current: currentBookings,
+                            maximum: maxCapacity,
                             percentage: slot.fillPercentage
                         )
                     }
@@ -69,14 +93,14 @@ struct TimeSlotCard: View {
             .padding(16)
             
             // Running Late Banner
-            if slot.isRunningLate && slot.delayMinutes > 0 {
+            if isRunningLate && delayMinutes > 0 {
                 HStack(spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: "clock.badge.exclamationmark.fill")
                             .font(.caption)
                             .foregroundStyle(.yellow)
                         
-                        Text("Running \(slot.delayMinutes) min late")
+                        Text("Running \(delayMinutes) min late")
                             .font(.system(.caption, design: .rounded))
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
@@ -135,15 +159,15 @@ struct TimeSlotCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(slot.isRunningLate ? Color.yellow.opacity(0.5) : statusColor.opacity(isToggled ? 0.3 : 0), lineWidth: 2)
+                .strokeBorder(isRunningLate ? Color.yellow.opacity(0.5) : statusColor.opacity(isToggled ? 0.3 : 0), lineWidth: 2)
         )
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isToggled)
-        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: slot.isRunningLate)
+        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isRunningLate)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            if slot.isAvailable && slot.currentBookings > 0 {
-                if !slot.isRunningLate {
+            if isSlotAvailable && currentBookings > 0 {
+                if !isRunningLate {
                     Button(action: {
                         onMarkRunningLate?()
                         hapticFeedback()
@@ -155,8 +179,8 @@ struct TimeSlotCard: View {
             }
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            if slot.isAvailable && slot.currentBookings > 0 {
-                if slot.isRunningLate {
+            if isSlotAvailable && currentBookings > 0 {
+                if isRunningLate {
                     Button(action: {
                         onClearRunningLate?()
                         hapticFeedback()
@@ -175,7 +199,7 @@ struct TimeSlotCard: View {
             }
         }
         .contextMenu {
-            if slot.isAvailable && slot.currentBookings > 0 {
+            if isSlotAvailable && currentBookings > 0 {
                 Button(role: .destructive, action: {
                     onEmergencyCancel?()
                 }) {
@@ -184,7 +208,7 @@ struct TimeSlotCard: View {
                 
                 Divider()
                 
-                if slot.isRunningLate {
+                if isRunningLate {
                     Button(action: {
                         onClearRunningLate?()
                     }) {
@@ -229,7 +253,7 @@ struct TimeSlotCard: View {
     }
     
     private var statusColor: Color {
-        if slot.isRunningLate {
+        if isRunningLate {
             return .yellow
         }
         
@@ -308,7 +332,7 @@ struct SlotCapacityEditor: View {
     init(slot: TimeSlot, onSave: @escaping (Int) -> Void) {
         self.slot = slot
         self.onSave = onSave
-        _selectedCapacity = State(initialValue: slot.maxCapacity)
+        _selectedCapacity = State(initialValue: slot.maxCapacity ?? 5)
     }
     
     var body: some View {
@@ -371,11 +395,11 @@ struct SlotCapacityEditor: View {
                 }
                 .padding(.horizontal, 20)
                 
-                if slot.currentBookings > 0 {
+                if (slot.currentBookings ?? 0) > 0 {
                     HStack(spacing: 8) {
                         Image(systemName: "info.circle.fill")
                             .foregroundStyle(.orange)
-                        Text("Currently \(slot.currentBookings) patients booked")
+                        Text("Currently \(slot.currentBookings ?? 0) patients booked")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -402,8 +426,8 @@ struct SlotCapacityEditor: View {
                             .fill(Color.accentColor.gradient)
                     )
             }
-            .disabled(selectedCapacity == slot.maxCapacity)
-            .opacity(selectedCapacity == slot.maxCapacity ? 0.5 : 1.0)
+            .disabled(selectedCapacity == (slot.maxCapacity ?? 5))
+            .opacity(selectedCapacity == (slot.maxCapacity ?? 5) ? 0.5 : 1.0)
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }

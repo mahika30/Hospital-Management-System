@@ -428,6 +428,8 @@ private struct AppointmentRow: View {
             return .blue
         case .confirmed:
             return .green
+        case .inProgress:
+            return .orange
         case .completed:
             return .gray
         case .cancelled:
