@@ -22,24 +22,20 @@ struct BookAppointmentIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         // Init service
         let service = await MainActor.run { AppointmentService() }
-        
-        // 1. If we already have a selected slot from disambiguation param, book it.
+            
         if let chosenSlot = selectedSlot {
             return try await bookSlot(service: service, slotId: chosenSlot.id, slotTime: chosenSlot.time)
         }
         
-        // 2. Otherwise, fetch valid slots for the requested date
         let slots = try await service.fetchAvailableSlots(staffId: doctor.id, date: date)
         
         if slots.isEmpty {
             throw IntentError.message("No available slots for \(doctor.name) on \(date.formatted(date: .abbreviated, time: .omitted)).")
         }
         
-        // 3. Convert to Entities
+
         let slotEntities = slots.map { TimeSlotEntity(from: $0, doctorName: doctor.name) }
-        
-        // 4. Ask user to pick one
-        // Siri will present a list or read them out
+
         let chosenToken = try await $selectedSlot.requestDisambiguation(
             among: slotEntities,
             dialog: "I found \(slots.count) available slots. Which one would you like?"
@@ -133,7 +129,6 @@ struct CheckAppointmentStatusIntent: AppIntent {
     
     @MainActor
     private func getPatientId() async -> UUID? {
-        // Accessing shared (MainActor) and session (Async)
         try? await SupabaseManager.shared.client.auth.session.user.id
     }
     
@@ -183,13 +178,6 @@ struct AppointmentReminderIntent: AppIntent {
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         
         if let appt = appointment {
-             // In this case, we have the simplified Entity.
-             // We need the full appointment to get the exact date for the system reminder.
-             // So we should fetch it or try to parse what we have.
-             // But simpler strategy: Use the same fallback logic to fetch fresh data using ID if needed, 
-             // or just trust the simplified entity if we can.
-             // Actually, AppointmentEntity stores 'id'. We can fetch the full object to ensure accuracy.
-             
              let pId = await getPatientId()
              guard let validId = pId else {
                  return .result(value: "Please log in.", dialog: "Please log in first.")
@@ -203,7 +191,7 @@ struct AppointmentReminderIntent: AppIntent {
              }
         }
         
-        // Fallback: Find nearest
+
         let pId = await getPatientId()
         
         guard let validId = pId else {
@@ -236,8 +224,8 @@ struct AppointmentReminderIntent: AppIntent {
         })
         
         if let next = nearest {
-             // Create System Reminder
-             try await createSystemReminder(for: next)
+
+            try await createSystemReminder(for: next)
              
              let name = next.doctorName
              let msg = "Okay, I've added a reminder to your default list for your appointment with \(name)."
@@ -267,7 +255,6 @@ struct AppointmentReminderIntent: AppIntent {
     private func createSystemReminder(for appointment: Appointment) async throws {
         let store = EKEventStore()
         
-        // Request Access (this might hang if in background and permission not deterimined, but correct API usage)
         let granted: Bool
         if #available(iOS 17.0, *) {
              granted = try await store.requestFullAccessToReminders()
@@ -292,6 +279,154 @@ struct AppointmentReminderIntent: AppIntent {
         
         reminder.calendar = store.defaultCalendarForNewReminders()
         try store.save(reminder, commit: true)
+    }
+}
+
+// MARK: - Doctor Intents
+
+@available(iOS 16.0, *)
+struct DoctorAppointmentCountIntent: AppIntent {
+    static var title: LocalizedStringResource = "Doctor Appointment Count"
+    static var openAppWhenRun: Bool = false
+    
+    @Parameter(title: "Date")
+    var requestedDate: String?
+    
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        
+        let staffId = try await IntentRoleGuard.validate(role: .staff)
+        
+        let date: Date
+        let dateLabel: String
+        
+        if let input = requestedDate?.lowercased() {
+             if input.contains("tomorrow") {
+                 date = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+                 dateLabel = "tomorrow"
+             } else {
+                 date = Date()
+                 dateLabel = "today"
+             }
+        } else {
+             date = Date()
+             dateLabel = "today"
+        }
+        
+        let count = try await AppointmentService().fetchDoctorAppointmentsCount(staffId: staffId, for: date)
+        
+        let msg = "You have \(count) appointments \(dateLabel)."
+        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+    }
+}
+
+@available(iOS 16.0, *)
+struct DoctorOpenAllSlotsIntent: AppIntent {
+    static var title: LocalizedStringResource = "Open All Slots"
+    static var openAppWhenRun: Bool = false
+    
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let staffId = try await IntentRoleGuard.validate(role: .staff)
+        try await AppointmentService().toggleSlotAvailability(staffId: staffId, date: Date(), makeAvailable: true)
+        let msg = "I have opened all your slots for today."
+        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+    }
+}
+
+@available(iOS 16.0, *)
+struct DoctorCloseAllSlotsIntent: AppIntent {
+    static var title: LocalizedStringResource = "Close All Slots"
+    static var openAppWhenRun: Bool = false
+    
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let staffId = try await IntentRoleGuard.validate(role: .staff)
+        try await AppointmentService().toggleSlotAvailability(staffId: staffId, date: Date(), makeAvailable: false)
+        let msg = "I have closed all your slots for today."
+        return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+    }
+}
+
+@available(iOS 16.0, *)
+struct DoctorCloseSpecificSlotIntent: AppIntent {
+    static var title: LocalizedStringResource = "Close Specific Slot"
+    static var openAppWhenRun: Bool = false
+    
+    @Parameter(title: "Slot")
+    var targetSlot: TimeSlotEntity?
+    
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let staffId = try await IntentRoleGuard.validate(role: .staff)
+        let date = Date()
+        
+        if let slot = targetSlot {
+            try await AppointmentService().toggleSpecificSlot(slotId: slot.id, makeAvailable: false)
+            let msg = "I have closed the slot at \(slot.time)."
+            return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        } else {
+            let service = await AppointmentService()
+             let rawSlots = try await service.fetchAvailableSlotsForDoctor(staffId: staffId, date: date)
+             
+             if rawSlots.isEmpty {
+                 let msg = "You don't have any open slots to close for today."
+                 return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+             }
+             
+             let entities = rawSlots.map { TimeSlotEntity(from: $0, doctorName: "You") }
+             
+             let chosen = try await $targetSlot.requestDisambiguation(
+                 among: entities,
+                 dialog: "Which slot would you like to close?"
+             )
+             
+             try await service.toggleSpecificSlot(slotId: chosen.id, makeAvailable: false)
+             let msg = "I have closed the slot at \(chosen.time)."
+             return .result(value: msg, dialog: IntentDialog(stringLiteral: msg))
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+struct AdminAnalyticsIntent: AppIntent {
+    static var title: LocalizedStringResource = "Admin Dashboard Analytics"
+    static var openAppWhenRun: Bool = false
+    
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        
+        let _ = try await IntentRoleGuard.validate(role: .admin)
+        
+        // Fetch Data
+        let (allAppts, _, allStaff) = try await AnalyticsService.shared.fetchAnalyticsData()
+        
+        let service = await AnalyticsService.shared
+        
+        let today = Date()
+        let calendar = Calendar.current
+        let todayAppts = allAppts.filter { appt in
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            guard let date = ISO8601DateFormatter().date(from: appt.appointmentDate) ??
+                            ISO8601DateFormatter().date(from: appt.appointmentDate.replacingOccurrences(of: "\\.\\d+", with: "", options: .regularExpression))
+            else { return false }
+            
+            return calendar.isDate(date, inSameDayAs: today)
+        }
+        
+        let totalAppointments = todayAppts.count
+        let footfall = Set(todayAppts.map { $0.patientId }).count
+        let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        let thisWeekAppts = allAppts.filter { appt in
+            guard let date = ISO8601DateFormatter().date(from: appt.appointmentDate) ?? ISO8601DateFormatter().date(from: appt.appointmentDate.replacingOccurrences(of: "\\.\\d+", with: "", options: .regularExpression)) else { return false }
+            return date >= startOfWeek
+        }
+        let busiestDay = await service.calculateBusiestDay(from: thisWeekAppts)
+        let busiestDoctorToday = await service.calculateMostOccupiedStaff(appointments: todayAppts, staffList: allStaff)
+        let spoken = """
+        Today's footfall is \(footfall) patients.
+        There are \(totalAppointments) appointments.
+        \(busiestDay) is the busiest day this week.
+        \(busiestDoctorToday) is the busiest doctor today.
+        """
+        
+        return .result(value: spoken, dialog: IntentDialog(stringLiteral: spoken))
     }
 }
 

@@ -140,27 +140,33 @@ struct TimeSlotEntity: AppEntity {
 @available(iOS 16.0, *)
 struct TimeSlotQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [TimeSlotEntity] {
-        // We need to fetch specific slots by ID.
-        // Doing a broad fetch or single fetch.
-        // For simplicity, we'll try to fetch them individually or via a service method if exists.
-        // Since we don't have a bulk fetch by ID, let's just query the table directly here.
         
-        let client = SupabaseManager.shared.client
+        let client = await SupabaseManager.shared.client
         let slots: [TimeSlot] = try await client
             .from("time_slots")
             .select()
-            .in("id", value: identifiers.map { $0.uuidString })
+            .in("id", values: identifiers.map { $0.uuidString })
             .execute()
             .value
             
-        // We need doctor names... but TimeSlot doesn't have it directly. 
-        // We might just use "Doctor" or fetch staff.
-        // Ideally we'd join strictly, but for this Query let's simple return.
-        
         return slots.map { TimeSlotEntity(from: $0, doctorName: "Doctor") }
     }
     
     func suggestedEntities() async throws -> [TimeSlotEntity] {
         return []
     }
+}
+
+enum SlotManageAction: String, AppEnum {
+    case openAll = "open all"
+    case closeAll = "close all"
+    case closeSpecific = "close specific"
+    
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Slot Action"
+    
+    static var caseDisplayRepresentations: [SlotManageAction : DisplayRepresentation] = [
+        .openAll: "Open All Slots",
+        .closeAll: "Close All Slots",
+        .closeSpecific: "Close A Slot"
+    ]
 }
