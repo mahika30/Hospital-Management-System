@@ -50,7 +50,19 @@ struct CompletedAppointmentsView: View {
             } else {
                 List {
                     ForEach(viewModel.appointments) { appointment in
-                        CompletedAppointmentRow(appointment: appointment)
+                        NavigationLink {
+                            if let patient = appointment.patient {
+                                ConsultationView(
+                                    appointment: appointment,
+                                    patient: patient,
+                                    staffId: viewModel.staffId
+                                )
+                            } else {
+                                Text("Patient data not available")
+                            }
+                        } label: {
+                            CompletedAppointmentRow(appointment: appointment)
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)

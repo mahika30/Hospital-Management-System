@@ -13,6 +13,8 @@ struct PatientProfileView: View {
     @State private var phoneNumber = ""
     @State private var gender = ""
     @State private var bloodGroup = ""
+    
+    @State private var showingMedicalHistory = false
 
     var body: some View {
         ZStack {
@@ -25,6 +27,8 @@ struct PatientProfileView: View {
                     profileCard
 
                     personalInfoCard
+                    
+
 
                     logoutButton
                 }
@@ -55,6 +59,7 @@ struct PatientProfileView: View {
             loadInitialValues()
         }
     }
+
     private var profileCard: some View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.fill")
@@ -93,6 +98,57 @@ struct PatientProfileView: View {
             infoRow(title: "Phone Number", text: $phoneNumber)
             infoRow(title: "Gender", text: $gender)
             infoRow(title: "Blood Group", text: $bloodGroup)
+            
+            Divider()
+            
+            NavigationLink {
+                if let patient = viewModel.patient {
+                    UpdateMedicalHistoryView(patient: patient) { updatedPatient in
+                        Task {
+                            do {
+                                try await PatientService().updatePatient(
+                                    id: updatedPatient.id,
+                                    fullName: updatedPatient.fullName,
+                                    dateOfBirth: updatedPatient.dateOfBirth,
+                                    gender: updatedPatient.gender,
+                                    phoneNumber: updatedPatient.phoneNumber,
+                                    email: updatedPatient.email,
+                                    bloodGroup: updatedPatient.bloodGroup,
+                                    allergies: updatedPatient.allergies,
+                                    currentMedications: updatedPatient.currentMedications,
+                                    medicalHistory: updatedPatient.medicalHistory,
+                                    admissionStatus: updatedPatient.admissionStatus,
+                                    admissionDate: updatedPatient.admissionDate?.ISO8601Format(),
+                                    dischargeDate: updatedPatient.dischargeDate?.ISO8601Format(),
+                                    assignedDoctorId: updatedPatient.assignedDoctorId?.uuidString,
+                                    emergencyContact: updatedPatient.emergencyContact,
+                                    emergencyContactRelation: updatedPatient.emergencyContactRelation,
+                                    medicalRecordNumber: updatedPatient.medicalRecordNumber,
+                                    address: updatedPatient.address
+                                )
+                                await viewModel.loadDashboardData(authVM: authVM)
+                            } catch {
+                                print("Failed to save patient history: \(error)")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Medical History")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Text("Chronic diseases, allergies, medications")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                }
+                .padding(.vertical, 4)
+            }
 
             if let errorMessage {
                 Text(errorMessage)
@@ -110,6 +166,10 @@ struct PatientProfileView: View {
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
     }
+
+
+    
+
 
     private var logoutButton: some View {
         Button {

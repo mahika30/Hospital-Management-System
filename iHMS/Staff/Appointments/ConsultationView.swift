@@ -182,40 +182,7 @@ struct ConsultationView: View {
                 .cornerRadius(12)
             }
             
-            if let allergies = patient.allergies, !allergies.isEmpty {
-                MedicalInfoCard(
-                    title: "Allergies",
-                    items: allergies,
-                    icon: "exclamationmark.triangle.fill",
-                    color: .red
-                )
-            }
-            
-            if let medications = patient.currentMedications, !medications.isEmpty {
-                MedicalInfoCard(
-                    title: "Current Medications",
-                    items: medications,
-                    icon: "pills.fill",
-                    color: .blue
-                )
-            }
-            
-            if let history = patient.medicalHistory, !history.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Medical History", systemImage: "doc.text.fill")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.purple)
-                    
-                    Text(history)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color.purple.opacity(0.1))
-                .cornerRadius(12)
-            }
+            ExpandableMedicalHistoryCard(patient: patient)
             
             if let phone = patient.phoneNumber {
                 HStack {
@@ -377,28 +344,4 @@ struct ConsultationView: View {
         isLoadingPrescription = false
     }
 }
-private struct MedicalInfoCard: View {
-    let title: String
-    let items: [String]
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: icon)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(color)
-            
-            ForEach(items, id: \.self) { item in
-                Text("• \(item)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(color.opacity(0.1))
-        .cornerRadius(12)
-    }
-}
+
