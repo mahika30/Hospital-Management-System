@@ -82,7 +82,7 @@ final class MedicalReportService {
         try await supabase
             .from("medical_reports")
             .select()
-            .eq("user_id", userId.uuidString)
+            .eq("user_id", value: userId.uuidString)
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -110,7 +110,7 @@ final class MedicalReportService {
         let response = try await supabase
             .from("medical_reports")
             .delete()
-            .eq("id", report.id.uuidString)
+            .eq("id", value: report.id.uuidString)
             .execute()
 
         guard response.status == 200 || response.status == 204 else {
