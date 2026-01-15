@@ -50,6 +50,27 @@ final class PatientService {
 
         return patients.first
     }
+    func updateMedicalHistory(
+        patientId: UUID,
+        medicalHistory: String?,
+        allergies: [String]?,
+        currentMedications: [String]?
+    ) async throws {
+
+        let updateDTO = MedicalHistoryUpdateDTO(
+            medical_history: medicalHistory,
+            allergies: allergies,
+            current_medications: currentMedications
+        )
+
+        try await client
+            .from("patients")
+            .update(updateDTO)
+            .eq("id", value: patientId.uuidString)
+            .execute()
+    }
+
+
     
     func updatePatient(
         id: UUID,

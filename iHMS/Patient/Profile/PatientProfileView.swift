@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PatientProfileView: View {
     @ObservedObject var viewModel: PatientViewModel
+    @State private var selectedPatientForHistory: Patient?
+
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
 
@@ -104,33 +106,11 @@ struct PatientProfileView: View {
             NavigationLink {
                 if let patient = viewModel.patient {
                     UpdateMedicalHistoryView(patient: patient) { updatedPatient in
-                        Task {
-                            do {
-                                try await PatientService().updatePatient(
-                                    id: updatedPatient.id,
-                                    fullName: updatedPatient.fullName,
-                                    dateOfBirth: updatedPatient.dateOfBirth,
-                                    gender: updatedPatient.gender,
-                                    phoneNumber: updatedPatient.phoneNumber,
-                                    email: updatedPatient.email,
-                                    bloodGroup: updatedPatient.bloodGroup,
-                                    allergies: updatedPatient.allergies,
-                                    currentMedications: updatedPatient.currentMedications,
-                                    medicalHistory: updatedPatient.medicalHistory,
-                                    admissionStatus: updatedPatient.admissionStatus,
-                                    admissionDate: updatedPatient.admissionDate?.ISO8601Format(),
-                                    dischargeDate: updatedPatient.dischargeDate?.ISO8601Format(),
-                                    assignedDoctorId: updatedPatient.assignedDoctorId?.uuidString,
-                                    emergencyContact: updatedPatient.emergencyContact,
-                                    emergencyContactRelation: updatedPatient.emergencyContactRelation,
-                                    medicalRecordNumber: updatedPatient.medicalRecordNumber,
-                                    address: updatedPatient.address
-                                )
-                                await viewModel.loadDashboardData(authVM: authVM)
-                            } catch {
-                                print("Failed to save patient history: \(error)")
-                            }
-                        }
+                        try await viewModel.updateMedicalHistory(
+                            medicalHistory: updatedPatient.medicalHistory,
+                            allergies: updatedPatient.allergies,
+                            currentMedications: updatedPatient.currentMedications
+                        )
                     }
                 }
             } label: {
@@ -138,7 +118,6 @@ struct PatientProfileView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Medical History")
                             .font(.headline)
-                            .foregroundColor(.primary)
                         Text("Chronic diseases, allergies, medications")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -149,6 +128,7 @@ struct PatientProfileView: View {
                 }
                 .padding(.vertical, 4)
             }
+
 
             if let errorMessage {
                 Text(errorMessage)

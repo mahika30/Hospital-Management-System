@@ -41,8 +41,19 @@ final class MedicalReportService {
             throw MedicalReportError.fileTooLarge
         }
 
-        let fileName = "\(UUID().uuidString).\(normalizedType)"
-        let filePath = "\(userId.uuidString)/\(fileName)"
+        // 🔍 Validate data
+        print("DEBUG: File size: \(fileData.count) bytes")
+        guard !fileData.isEmpty else {
+            throw MedicalReportError.storageFailed("File data is empty.")
+        }
+        
+        // Use Timestamp + UUID prefix to guarantee uniqueness and safe characters
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let fileName = "\(timestamp)_\(UUID().uuidString.lowercased()).\(normalizedType)"
+        
+        // IMPORTANT: Must lowercase the UUID to match Supabase auth.uid()
+        // which prevents RLS policy failures in Storage.
+        let filePath = "\(userId.uuidString.lowercased())/\(fileName)"
 
         let contentType: String
         switch normalizedType {
@@ -54,27 +65,50 @@ final class MedicalReportService {
             contentType = "image/jpeg"
         }
 
-        // 1️⃣ Upload file to Storage
-        try await supabase.storage
-            .from("medical-reports")
-            .upload(
-                path: filePath,
-                file: fileData,
-                options: FileOptions(contentType: contentType)
-            )
+        // 🔍 Validate data
+        guard !fileData.isEmpty else {
+            throw MedicalReportError.storageFailed("File data is empty.")
+        }
 
+        // 1️⃣ Upload file to Storage
+        // REMOVED upsert: true because your RLS policy only allows INSERT, not UPDATE.
+        // Overwriting files requires an UPDATE policy.
+        print("DEBUG: Starting file upload process.")
+        print("DEBUG: Uploading to path: \(filePath)")
+        print("DEBUG: User ID: \(userId)")
+        
+        do {
+            try await supabase.storage
+                .from("medical-reports")
+                .upload(
+                    filePath,
+                    data: fileData,
+                    options: FileOptions(contentType: contentType)
+                )
+        } catch {
+            print("DEBUG: Storage Error: \(error)")
+            // Include specific error info
+            throw MedicalReportError.storageFailed("Storage upload failed: \(error.localizedDescription). Details: \(error)")
+        }
+        
         // 2️⃣ Insert metadata
-        try await supabase
-            .from("medical_reports")
-            .insert([
-                "user_id": userId.uuidString,
-                "uploaded_by": userId.uuidString,
-                "file_path": filePath,
-                "file_type": normalizedType,
-                "title": title,
-                "description": description
-            ])
-            .execute()
+        // We use returning: .minimal to avoid "cannot parse response" errors
+        // when the SDK tries to decode a response that might be empty or restricted by RLS.
+        do {
+            try await supabase
+                .from("medical_reports")
+                .insert([
+                    "user_id": userId.uuidString,
+                    "uploaded_by": userId.uuidString,
+                    "file_path": filePath,
+                    "file_type": normalizedType,
+                    "title": title,
+                    "description": description
+                ]) // Back to default behavior to test
+                .execute()
+        } catch {
+            throw MedicalReportError.databaseFailed(error.localizedDescription)
+        }
     }
 
     // MARK: Fetch Reports

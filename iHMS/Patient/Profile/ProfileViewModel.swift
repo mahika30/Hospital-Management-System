@@ -80,6 +80,27 @@ final class PatientViewModel: ObservableObject {
         }
     }
     
+    @MainActor
+    func updateMedicalHistory(
+        medicalHistory: String?,
+        allergies: [String]?,
+        currentMedications: [String]?
+    ) async throws {
+
+        guard let patient else {
+            throw NSError(domain: "PatientMissing", code: 0)
+        }
+
+        try await patientService.updateMedicalHistory(
+            patientId: patient.id,
+            medicalHistory: medicalHistory,
+            allergies: allergies,
+            currentMedications: currentMedications
+        )
+        self.patient = try await patientService.fetchPatient(id: patient.id)
+    }
+
+    
     private func loadAISuggestions(patientId: UUID) async {
         do {
             print("🤖 Loading AI suggestions for dashboard...")

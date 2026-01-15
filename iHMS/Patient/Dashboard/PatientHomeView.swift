@@ -131,6 +131,7 @@ struct PatientDashboardView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @StateObject private var viewModel = PatientViewModel()
     @State private var selectedTab = 0
+    @State private var authUserId: UUID?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -152,7 +153,11 @@ struct PatientDashboardView: View {
             .tag(1)
             
             NavigationStack {
-                MedicalRecordsView(patientId: viewModel.patient?.id ?? UUID())
+                if let userId = authUserId {
+                    MedicalReportsScene(userId: userId)
+                } else {
+                    ProgressView()
+                }
             }
             .tabItem {
                 Label("Records", systemImage: "doc.text.fill")
@@ -160,7 +165,6 @@ struct PatientDashboardView: View {
             .tag(2)
             
             NavigationStack {
-//                PaymentsBillsView(patientId: viewModel.patient?.id ?? UUID())
                 PaymentHistoryView(patientName: viewModel.name)
             }
             .tabItem {
@@ -170,6 +174,7 @@ struct PatientDashboardView: View {
         }
         .accentColor(.blue)
         .task {
+            self.authUserId = await authVM.currentUserId()
             await viewModel.loadDashboardData(authVM: authVM)
         }
     }

@@ -37,6 +37,8 @@ enum MedicalReportError: LocalizedError {
     case invalidFileType
     case fileTooLarge
     case deleteFailed
+    case storageFailed(String)
+    case databaseFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -46,6 +48,10 @@ enum MedicalReportError: LocalizedError {
             return "File size exceeds the allowed limit."
         case .deleteFailed:
             return "Failed to delete medical report."
+        case .storageFailed(let msg):
+            return "Storage Upload Failed: \(msg)"
+        case .databaseFailed(let msg):
+            return "Database Insert Failed: \(msg)"
         }
     }
 }

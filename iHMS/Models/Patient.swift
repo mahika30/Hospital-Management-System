@@ -36,8 +36,6 @@ struct Patient: Identifiable, Codable {
     let gender: String?
     let createdAt: Date?
     let bloodGroup: String?
-    
-    // Patient Records Extensions
     var allergies: [String]?
     var currentMedications: [String]?
     var medicalHistory: String?
