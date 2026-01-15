@@ -71,7 +71,8 @@ struct PatientCard: View {
                     
                     if let statusStr = patient.admissionStatus,
                        statusStr == "Admitted",
-                       let admissionDate = patient.admissionDate {
+                       let dateStr = patient.admissionDate,
+                       let admissionDate = ISO8601DateFormatter ().date(from: dateStr) {
                         Text(daysAdmitted(from: admissionDate))
                             .font(.system(.caption2, design: .rounded))
                             .foregroundStyle(.gray)

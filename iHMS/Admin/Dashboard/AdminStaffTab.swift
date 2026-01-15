@@ -9,11 +9,13 @@ struct AdminStaffTab: View {
 
     @State private var searchText = ""
     @State private var selectedDepartment: String? = nil
+    @State private var selectedDoctorForWorkload: Staff?
 
     private let staffService = StaffService()
 
     var body: some View {
         VStack(spacing: 8) {
+            // ... (Search Bar and Filter Header remains same) ...
             HStack(spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
@@ -93,24 +95,39 @@ struct AdminStaffTab: View {
                 }
 
                 ForEach(filteredDoctors) { doctor in
-                    NavigationLink {
-                        StaffProfileView(staff: doctor, isOwner: false)
-                    } label: {
-                        DoctorRowView(doctor: doctor)
+                    ZStack {
+                        NavigationLink {
+                            StaffProfileView(staff: doctor, isOwner: false)
+                        } label: {
+                            EmptyView()
+                        }
+                        .opacity(0) // Hidden link for row tap
+
+                        DoctorRowView(doctor: doctor) {
+                            // On Info Tap
+                            selectedDoctorForWorkload = doctor
+                        }
                     }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
-            .listStyle(.insetGrouped)
+            .listStyle(.plain)
+            .background(Color(.systemBackground))
         }
         .background(Color(.systemBackground))
         .sheet(isPresented: $showAddStaffSheet) {
             AddStaffView()
         }
+        .sheet(item: $selectedDoctorForWorkload) { doctor in
+            DoctorWorkloadView(doctor: doctor)
+        }
         .task {
             await loadDoctors()
         }
     }
-
+    
+    // ... (rest of methods) ...
     // MARK: Filtering Logic
     private var filteredDoctors: [Staff] {
         doctors.filter { doctor in

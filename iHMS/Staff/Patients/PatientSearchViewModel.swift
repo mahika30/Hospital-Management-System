@@ -176,12 +176,12 @@ final class PatientSearchViewModel {
             case .nameDesc:
                 return patient1.fullName.lowercased() > patient2.fullName.lowercased()
             case .dateAsc:
-                let date1 = patient1.createdAt ?? Date.distantPast
-                let date2 = patient2.createdAt ?? Date.distantPast
+                let date1 = patient1.createdDate ?? Date.distantPast
+                let date2 = patient2.createdDate ?? Date.distantPast
                 return date1 < date2
             case .dateDesc:
-                let date1 = patient1.createdAt ?? Date.distantPast
-                let date2 = patient2.createdAt ?? Date.distantPast
+                let date1 = patient1.createdDate ?? Date.distantPast
+                let date2 = patient2.createdDate ?? Date.distantPast
                 return date1 > date2
             }
         }
@@ -225,8 +225,8 @@ final class PatientSearchViewModel {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
-                dischargeDate: patient.dischargeDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
+                dischargeDate: patient.dischargeDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,
@@ -301,7 +301,7 @@ final class PatientSearchViewModel {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,

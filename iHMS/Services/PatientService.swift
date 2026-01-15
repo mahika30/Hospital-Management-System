@@ -124,4 +124,19 @@ final class PatientService {
         
         return count ?? 0
     }
+    func fetchPatients(from startDate: Date, to endDate: Date) async throws -> [Patient] {
+        let isoStart = ISO8601DateFormatter().string(from: startDate)
+        let isoEnd = ISO8601DateFormatter().string(from: endDate)
+        
+        let patients: [Patient] = try await client
+            .from("patients")
+            .select()
+            .gte("created_at", value: isoStart)
+            .lte("created_at", value: isoEnd)
+            .order("created_at", ascending: true)
+            .execute()
+            .value
+        
+        return patients
+    }
 }

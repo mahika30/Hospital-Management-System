@@ -34,7 +34,7 @@ struct Patient: Identifiable, Codable {
     let phoneNumber: String?
     let dateOfBirth: String?
     let gender: String?
-    let createdAt: Date?
+    let createdAt: String?
     let bloodGroup: String?
     
     // Patient Records Extensions
@@ -42,8 +42,8 @@ struct Patient: Identifiable, Codable {
     var currentMedications: [String]?
     var medicalHistory: String?
     var admissionStatus: String?
-    var admissionDate: Date?
-    var dischargeDate: Date?
+    var admissionDate: String?
+    var dischargeDate: String?
     var assignedDoctorId: UUID?
     var emergencyContact: String?
     var emergencyContactRelation: String?
@@ -51,6 +51,13 @@ struct Patient: Identifiable, Codable {
     var address: String?
     
     // Computed properties
+    var createdDate: Date? {
+        guard let dateString = createdAt else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: dateString) ?? ISO8601DateFormatter().date(from: dateString)
+    }
+    
     var age: Int {
         guard let dobString = dateOfBirth else { return 0 }
         let formatter = ISO8601DateFormatter()
