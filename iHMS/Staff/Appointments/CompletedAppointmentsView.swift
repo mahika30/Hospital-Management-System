@@ -50,7 +50,7 @@ struct CompletedAppointmentsView: View {
             } else {
                 List {
                     ForEach(viewModel.appointments) { appointment in
-                        CompletedAppointmentRow(appointment: appointment)
+                        CompletedAppointmentRow(appointment: appointment, staffId: viewModel.staffId)
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -69,6 +69,10 @@ struct CompletedAppointmentsView: View {
 
 struct CompletedAppointmentRow: View {
     let appointment: Appointment
+    let staffId: UUID
+    
+    @State private var showFeedbackSheet = false
+    @State private var hasFeedback = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -87,21 +91,14 @@ struct CompletedAppointmentRow: View {
                                 .fontWeight(.semibold)
                         }
                     }
-                    .onAppear {
-                        print("🔍 Row rendering - Patient: \(appointment.patient?.fullName ?? "nil"), ID: \(appointment.id)")
-                    }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(appointment.patient?.fullName ?? "No Name (ID: \(appointment.patientId.uuidString.prefix(8))...)")
+                    Text(appointment.patient?.fullName ?? "Unknown Patient")
                         .font(.headline)
                     if let patient = appointment.patient {
                         Text("Age: \(patient.age) • \(patient.gender ?? "N/A")")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    } else {
-                        Text("Appointment: \(appointment.id.uuidString.prefix(8))...")
-                            .font(.caption)
-                            .foregroundColor(.orange)
                     }
                 }
                 
@@ -124,8 +121,88 @@ struct CompletedAppointmentRow: View {
                         .cornerRadius(6)
                 }
             }
+            
+            if let reason = appointment.reasonForVisit {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
+            }
+            
+            if let bloodGroup = appointment.patient?.bloodGroup {
+                HStack(spacing: 8) {
+                    Image(systemName: "drop.fill")
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                    Text("Blood Type: \(bloodGroup)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+            }
+            
+            // Feedback Button - Only show if feedback not submitted
+            if !hasFeedback {
+                Button(action: {
+                    showFeedbackSheet = true
+                }) {
+                    HStack {
+                        Image(systemName: "note.text.badge.plus")
+                        Text("Give Feedback")
+                            .fontWeight(.medium)
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
+                .padding(.top, 4)
+            }
+            
+            // Show feedback submitted indicator
+            if hasFeedback {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Feedback Submitted")
+                        .fontWeight(.medium)
+                }
+                .font(.subheadline)
+                .foregroundColor(.green)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.top, 4)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .sheet(isPresented: $showFeedbackSheet) {
+            DoctorFeedbackView(appointment: appointment, staffId: staffId)
+                .onDisappear {
+                    // Refresh feedback status after sheet dismissal
+                    Task {
+                        await checkFeedbackStatus()
+                    }
+                }
+        }
+        .task {
+            await checkFeedbackStatus()
+        }
+    }
+    
+    // Check if feedback already exists
+    private func checkFeedbackStatus() async {
+        let feedbackService = FeedbackService()
+        do {
+            hasFeedback = try await feedbackService.checkFeedbackExists(
+                appointmentId: appointment.id,
+                submittedBy: .doctor
+            )
+        } catch {
+            print("Error checking feedback status: \(error)")
+        }
     }
 }
 
