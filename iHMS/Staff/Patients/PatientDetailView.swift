@@ -9,6 +9,7 @@ struct PatientDetailView: View {
     
     @State private var appointments: [Appointment] = []
     @State private var isLoadingAppointments = false
+    @State private var currentStaffId: UUID?
     
     var body: some View {
         ScrollView {
@@ -20,9 +21,7 @@ struct PatientDetailView: View {
                 QuickStatsSection(patient: patient, appointments: appointments)
                 
                 // Medical Information
-                if patient.allergies != nil || patient.currentMedications != nil || patient.medicalHistory != nil {
-                    MedicalInformationSection(patient: patient)
-                }
+                ExpandableMedicalHistoryCard(patient: patient)
                 
                 // Contact Information
                 ContactInformationSection(patient: patient)
@@ -33,17 +32,29 @@ struct PatientDetailView: View {
                 }
                 
                 // Recent Appointments
-                RecentAppointmentsSection(
-                    appointments: appointments,
-                    isLoading: isLoadingAppointments
-                )
+
+                if let staffId = currentStaffId {
+                    RecentAppointmentsSection(
+                        appointments: appointments,
+                        isLoading: isLoadingAppointments,
+                        patient: patient,
+                        staffId: staffId
+                    )
+                }
             }
             .padding()
         }
         .navigationTitle("Patient Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            await loadCurrentUser()
             await loadAppointments()
+        }
+    }
+    
+    private func loadCurrentUser() async {
+        if let user = try? await SupabaseManager.shared.client.auth.session.user {
+            currentStaffId = user.id
         }
     }
     
@@ -197,55 +208,8 @@ private struct QuickStatCard: View {
 }
 
 // MARK: - Medical Information Section
-private struct MedicalInformationSection: View {
-    let patient: Patient
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Medical Information")
-                .font(.headline)
-            
-            VStack(spacing: 12) {
-                if let allergies = patient.allergies, !allergies.isEmpty {
-                    InfoRow(
-                        icon: "exclamationmark.triangle.fill",
-                        label: "Allergies",
-                        value: allergies.joined(separator: ", "),
-                        color: .red
-                    )
-                }
-                
-                if let medications = patient.currentMedications, !medications.isEmpty {
-                    InfoRow(
-                        icon: "pills.fill",
-                        label: "Current Medications",
-                        value: medications.joined(separator: ", "),
-                        color: .blue
-                    )
-                }
-                
-                if let history = patient.medicalHistory, !history.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Medical History", systemImage: "doc.text.fill")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.purple)
-                        
-                        Text(history)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.purple.opacity(0.1))
-                    )
-                }
-            }
-        }
-    }
-}
+// MARK: - Medical History Row
+
 
 // MARK: - Contact Information Section
 private struct ContactInformationSection: View {
@@ -355,6 +319,8 @@ private struct AdmissionInformationSection: View {
 private struct RecentAppointmentsSection: View {
     let appointments: [Appointment]
     let isLoading: Bool
+    let patient: Patient
+    let staffId: UUID
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -374,7 +340,15 @@ private struct RecentAppointmentsSection: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(appointments.prefix(5)) { appointment in
-                        AppointmentRow(appointment: appointment)
+                        NavigationLink {
+                            ConsultationView(
+                                appointment: appointment,
+                                patient: patient,
+                                staffId: staffId
+                            )
+                        } label: {
+                            AppointmentRow(appointment: appointment)
+                        }
                     }
                 }
             }

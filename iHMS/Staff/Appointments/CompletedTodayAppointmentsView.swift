@@ -26,7 +26,7 @@ struct CompletedTodayAppointmentsView: View {
                 appointmentsList
             }
         }
-        .navigationTitle("Past Appointments")
+        .navigationTitle("Completed Today")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -58,7 +58,7 @@ struct CompletedTodayAppointmentsView: View {
                     )
                 }
             } label: {
-                CompletedAppointmentRow(appointment: appointment, staffId: viewModel.staffId)
+                CompletedAppointmentRow(appointment: appointment)
             }
         }
         .listStyle(.plain)

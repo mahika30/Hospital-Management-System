@@ -53,6 +53,13 @@ final class AppointmentService {
                 )
             """)
             .eq("patient_id", value: patientId.uuidString)
+            // Filter: Only future/today AND (Scheduled, Confirmed, Rescheduled)
+            .gte("appointment_date", value: {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withFullDate]
+                return formatter.string(from: Date())
+            }())
+            .or("status.eq.scheduled,status.eq.confirmed,status.eq.rescheduled")
             .order("appointment_date", ascending: true)
             .execute()
             .value

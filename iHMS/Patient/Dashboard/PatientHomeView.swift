@@ -389,9 +389,7 @@ struct PatientHomeTabView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
                         ForEach(viewModel.appointments) { appointment in
-                            NavigationLink {
-                                PatientAppointmentDetailView(appointment: appointment)
-                            } label: {
+                            NavigationLink(destination: AppointmentDestinationView(appointment: appointment)) {
                                 AppointmentCard(appointment: appointment)
                             }
                             .buttonStyle(.plain)

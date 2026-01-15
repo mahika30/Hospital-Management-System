@@ -50,13 +50,12 @@ struct PastAppointmentsView: View {
             } else {
                 List {
                     ForEach(viewModel.appointments) { appointment in
-                        PastAppointmentRow(appointment: appointment, patientId: viewModel.patientId)
+                        NavigationLink(destination: AppointmentDestinationView(appointment: appointment)) {
+                            PastAppointmentRow(appointment: appointment)
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
-                .refreshable {
-                    await viewModel.loadPastAppointments()
-                }
             }
         }
         .navigationTitle("Past Appointments")
@@ -72,85 +71,89 @@ struct PastAppointmentsView: View {
 
 struct PastAppointmentRow: View {
     let appointment: Appointment
-    let patientId: UUID
     
     @State private var showFeedbackSheet = false
     @State private var hasFeedback = false
     
+    var initials: String {
+        let name = appointment.staff?.fullName ?? "Doc"
+        let components = name.split(separator: " ")
+        if let first = components.first?.first, let last = components.last?.first {
+            return "\(first)\(last)".uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+    
+    var isMissed: Bool {
+        let status = appointment.status.lowercased()
+        // If it's in this list (past appointments) and not completed/cancelled, it's missed
+        return status != "completed" && status != "cancelled"
+    }
+    
+    var statusText: String {
+        if isMissed {
+            return "Missed"
+        }
+        return appointment.status.capitalized
+    }
+    
     var statusColor: Color {
-        switch appointment.status.lowercased() {
-        case "completed":
-            return .green
-        case "cancelled":
+        if isMissed {
             return .red
-        default:
-            return .gray
         }
+        return appointment.appointmentStatus.color
     }
-    
-    var statusIcon: String {
-        switch appointment.status.lowercased() {
-        case "completed":
-            return "checkmark.circle.fill"
-        case "cancelled":
-            return "xmark.circle.fill"
-        default:
-            return "clock.fill"
-        }
-    }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NavigationLink {
-                PatientAppointmentDetailView(appointment: appointment)
-            } label: {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(appointment.staff?.fullName ?? "Unknown Doctor")
-                                .font(.headline)
-                            
-                            if let designation = appointment.staff?.designation {
-                                Text(designation)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: statusIcon)
-                                .font(.caption)
-                            Text(appointment.status.capitalized)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(statusColor)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(statusColor.opacity(0.1))
-                        .cornerRadius(8)
-                    }
+            HStack(spacing: 16) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 50, height: 50)
                     
-                    HStack(spacing: 16) {
-                        Label(appointment.formattedDate, systemImage: "calendar")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        if let slot = appointment.timeSlot {
-                            Label(slot.timeRange, systemImage: "clock")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
+                    Text(initials)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                
+                // Name & Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(appointment.staff?.fullName ?? "Unknown Doctor")
+                        .font(.headline)
+                        .foregroundColor(.primary)
                     
-                    if let reason = appointment.reasonForVisit {
-                        Text(reason)
+                    // Using Date and Designation in place of Age/Gender line
+                    Text("\(appointment.formattedDate)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Time & Status
+                VStack(alignment: .trailing, spacing: 4) {
+                    if let slot = appointment.timeSlot {
+                        Text(slot.timeRange)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .padding(.top, 4)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    } else if let time = appointment.appointmentTime {
+                        Text(time)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
+                    
+                    Text(statusText)
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(statusColor.opacity(0.2))
+                        .foregroundColor(statusColor)
+                        .cornerRadius(4)
                 }
             }
             
@@ -196,7 +199,6 @@ struct PastAppointmentRow: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 8)
             }
             
             // Show feedback submitted indicator
@@ -217,12 +219,11 @@ struct PastAppointmentRow: View {
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.green.opacity(0.3), lineWidth: 1)
                 )
-                .padding(.top, 8)
             }
         }
         .padding(.vertical, 8)
         .sheet(isPresented: $showFeedbackSheet) {
-            PatientFeedbackView(appointment: appointment, patientId: patientId) {
+            PatientFeedbackView(appointment: appointment, patientId: appointment.patientId) {
                 // Mark as submitted immediately
                 hasFeedback = true
             }
