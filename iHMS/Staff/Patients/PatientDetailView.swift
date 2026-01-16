@@ -10,29 +10,38 @@ struct PatientDetailView: View {
     @State private var appointments: [Appointment] = []
     @State private var isLoadingAppointments = false
     @State private var currentStaffId: UUID?
+    @State private var showMedicalReports = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Patient Header
                 PatientHeaderSection(patient: patient)
-                
-                // Quick Stats
                 QuickStatsSection(patient: patient, appointments: appointments)
+     
+                VStack(spacing: 12) {
+                    ExpandableMedicalHistoryCard(patient: patient)
+                    
+                    Button {
+                        showMedicalReports = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                            Text("View Medical Reports")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                    }
+                }
                 
-                // Medical Information
-                ExpandableMedicalHistoryCard(patient: patient)
-                
-                // Contact Information
                 ContactInformationSection(patient: patient)
-                
-                // Admission Information
+            
                 if patient.admissionStatus != nil {
                     AdmissionInformationSection(patient: patient)
                 }
-                
-                // Recent Appointments
-
                 if let staffId = currentStaffId {
                     RecentAppointmentsSection(
                         appointments: appointments,
@@ -44,6 +53,13 @@ struct PatientDetailView: View {
             }
             .padding()
         }
+        .sheet(isPresented: $showMedicalReports) {
+            if let staffId = currentStaffId {
+                MedicalReportsScene(userId: patient.id, currentUserId: staffId)
+            } else {
+                ProgressView()
+            }
+        }
         .navigationTitle("Patient Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
@@ -51,6 +67,7 @@ struct PatientDetailView: View {
             await loadAppointments()
         }
     }
+    
     
     private func loadCurrentUser() async {
         if let user = try? await SupabaseManager.shared.client.auth.session.user {
@@ -65,7 +82,6 @@ struct PatientDetailView: View {
     }
 }
 
-// MARK: - Patient Header Section
 private struct PatientHeaderSection: View {
     let patient: Patient
     
@@ -87,7 +103,6 @@ private struct PatientHeaderSection: View {
                         .foregroundStyle(.white)
                 }
             
-            // Name and MRN
             VStack(spacing: 4) {
                 Text(patient.fullName)
                     .font(.title2)
@@ -100,7 +115,6 @@ private struct PatientHeaderSection: View {
                 }
             }
             
-            // Status Badge
             if let admissionStatus = patient.admissionStatus,
                let status = AdmissionStatus(rawValue: admissionStatus) {
                 HStack(spacing: 6) {
@@ -137,7 +151,6 @@ private struct PatientHeaderSection: View {
     }
 }
 
-// MARK: - Quick Stats Section
 private struct QuickStatsSection: View {
     let patient: Patient
     let appointments: [Appointment]
@@ -207,11 +220,7 @@ private struct QuickStatCard: View {
     }
 }
 
-// MARK: - Medical Information Section
-// MARK: - Medical History Row
 
-
-// MARK: - Contact Information Section
 private struct ContactInformationSection: View {
     let patient: Patient
     
@@ -315,7 +324,6 @@ private struct AdmissionInformationSection: View {
     }
 }
 
-// MARK: - Recent Appointments Section
 private struct RecentAppointmentsSection: View {
     let appointments: [Appointment]
     let isLoading: Bool
@@ -356,7 +364,6 @@ private struct RecentAppointmentsSection: View {
     }
 }
 
-// MARK: - Appointment Row
 private struct AppointmentRow: View {
     let appointment: Appointment
     

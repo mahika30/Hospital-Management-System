@@ -10,8 +10,12 @@ import SwiftUI
 
 struct MedicalReportsScene: View {
     
-    // MARK: - Input
     let userId: UUID
+    var currentUserId: UUID?
+    
+    private var actualCurrentUserId: UUID {
+        currentUserId ?? userId
+    }
     
     // MARK: - State
     @State private var reports: [MedicalReport] = []
@@ -96,11 +100,20 @@ struct MedicalReportsScene: View {
                     reports: reportsForCategory(categoryName),
                     onDelete: { report in
                         Task { await deleteReport(report) }
-                    }
+                    },
+
+                    currentUserId: actualCurrentUserId
                 )
             }
             .sheet(isPresented: $showUploadSheet) {
-                UploadMedicalReportScene(userId: userId) {
+                // If the current user is NOT the patient (userId), assume Doctor context
+                let isDoctor = actualCurrentUserId != userId
+                
+                UploadMedicalReportScene(
+                    userId: userId,
+                    uploaderId: actualCurrentUserId,
+                    doctorId: isDoctor ? actualCurrentUserId : nil
+                ) {
                     Task { await loadReports(isRefresh: true) }
                 }
             }
@@ -171,7 +184,7 @@ struct MedicalReportsScene: View {
         }
         
         do {
-            try await MedicalReportService.shared.deleteReport(report)
+            try await MedicalReportService.shared.deleteReport(report, requestingUserId: actualCurrentUserId)
         } catch {
             await MainActor.run {
                 self.reports = originalReports
@@ -246,6 +259,7 @@ struct CategoryDetailView: View {
     let categoryName: String
     let reports: [MedicalReport]
     let onDelete: (MedicalReport) -> Void
+    let currentUserId: UUID
     
     @State private var selectedReport: MedicalReport?
     @State private var searchText = ""
@@ -262,7 +276,7 @@ struct CategoryDetailView: View {
             if reports.isEmpty {
                 ContentUnavailableView(
                     "No Reports",
-                    systemImage: "folder.open",
+                    systemImage: "folder",
                     description: Text("No records found in \(categoryName)")
                 )
             } else {
@@ -273,10 +287,12 @@ struct CategoryDetailView: View {
                                 GlassDetailCard(report: report)
                                     .onTapGesture { selectedReport = report }
                                     .contextMenu {
-                                        Button(role: .destructive) {
-                                            onDelete(report)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
+                                        if report.uploadedBy == currentUserId {
+                                            Button(role: .destructive) {
+                                                onDelete(report)
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
                                         }
                                     }
                             }
@@ -341,6 +357,15 @@ struct GlassDetailCard: View {
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
+            
+            // Show "Uploaded by Dr. Name" if applicable, otherwise date
+            if let doctorName = report.doctor?.fullName {
+                Text("Uploaded by Dr. \(doctorName)")
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                    .lineLimit(1)
+            }
+            
             Text(formattedDate)
                 .font(.caption)
                 .foregroundStyle(.gray)

@@ -14,45 +14,39 @@ final class MedicalReportService {
     static let shared = MedicalReportService()
     private let supabase = SupabaseManager.shared.client
 
-    // MARK: Configuration
     private let maxFileSizeMB: Double = 5
     private let allowedFileTypes = ["pdf", "jpg", "jpeg", "png"]
 
     private init() {}
 
-    // MARK: Upload Report (with validation)
     func uploadReport(
         userId: UUID,
+        uploadedBy: UUID,
+        doctorId: UUID?,
         title: String,
         description: String?,
         fileData: Data,
         fileType: String
     ) async throws {
 
-        // 🔍 Validate file type
         let normalizedType = fileType.lowercased()
         guard allowedFileTypes.contains(normalizedType) else {
             throw MedicalReportError.invalidFileType
         }
 
-        // 🔍 Validate file size
         let fileSizeMB = Double(fileData.count) / (1024 * 1024)
         guard fileSizeMB <= maxFileSizeMB else {
             throw MedicalReportError.fileTooLarge
         }
 
-        // 🔍 Validate data
         print("DEBUG: File size: \(fileData.count) bytes")
         guard !fileData.isEmpty else {
             throw MedicalReportError.storageFailed("File data is empty.")
         }
         
-        // Use Timestamp + UUID prefix to guarantee uniqueness and safe characters
         let timestamp = Int(Date().timeIntervalSince1970)
         let fileName = "\(timestamp)_\(UUID().uuidString.lowercased()).\(normalizedType)"
         
-        // IMPORTANT: Must lowercase the UUID to match Supabase auth.uid()
-        // which prevents RLS policy failures in Storage.
         let filePath = "\(userId.uuidString.lowercased())/\(fileName)"
 
         let contentType: String
@@ -65,17 +59,9 @@ final class MedicalReportService {
             contentType = "image/jpeg"
         }
 
-        // 🔍 Validate data
         guard !fileData.isEmpty else {
             throw MedicalReportError.storageFailed("File data is empty.")
         }
-
-        // 1️⃣ Upload file to Storage
-        // REMOVED upsert: true because your RLS policy only allows INSERT, not UPDATE.
-        // Overwriting files requires an UPDATE policy.
-        print("DEBUG: Starting file upload process.")
-        print("DEBUG: Uploading to path: \(filePath)")
-        print("DEBUG: User ID: \(userId)")
         
         do {
             try await supabase.storage
@@ -87,19 +73,16 @@ final class MedicalReportService {
                 )
         } catch {
             print("DEBUG: Storage Error: \(error)")
-            // Include specific error info
             throw MedicalReportError.storageFailed("Storage upload failed: \(error.localizedDescription). Details: \(error)")
         }
-        
-        // 2️⃣ Insert metadata
-        // We use returning: .minimal to avoid "cannot parse response" errors
-        // when the SDK tries to decode a response that might be empty or restricted by RLS.
+
         do {
             try await supabase
                 .from("medical_reports")
                 .insert([
                     "user_id": userId.uuidString,
-                    "uploaded_by": userId.uuidString,
+                    "uploaded_by": uploadedBy.uuidString,
+                    "doctor_id": doctorId?.uuidString,
                     "file_path": filePath,
                     "file_type": normalizedType,
                     "title": title,
@@ -111,15 +94,47 @@ final class MedicalReportService {
         }
     }
 
-    // MARK: Fetch Reports
     func fetchReports(for userId: UUID) async throws -> [MedicalReport] {
-        try await supabase
+        // 1. Fetch Reports (without nested staff join to avoid FK error)
+        var reports: [MedicalReport] = try await supabase
             .from("medical_reports")
-            .select()
+            .select() // Select all fields, 'doctor' will be nil initially
             .eq("user_id", value: userId.uuidString)
             .order("created_at", ascending: false)
             .execute()
             .value
+        
+        let doctorIds = reports.compactMap { $0.doctorId }.map { $0.uuidString }
+        
+        guard !doctorIds.isEmpty else {
+            return reports
+        }
+        
+        // 3. Fetch Staff Names
+        struct StaffName: Codable {
+            let id: UUID
+            let fullName: String
+            enum CodingKeys: String, CodingKey {
+                case id
+                case fullName = "full_name"
+            }
+        }
+        
+        let doctors: [StaffName] = try await supabase
+            .from("staff")
+            .select("id, full_name")
+            .in("id", values: doctorIds)
+            .execute()
+            .value
+        
+        for i in 0..<reports.count {
+            if let docId = reports[i].doctorId,
+               let match = doctors.first(where: { $0.id == docId }) {
+                reports[i].doctor = MedicalReport.PartialStaff(fullName: match.fullName)
+            }
+        }
+        
+        return reports
     }
 
     // MARK: Signed URL
@@ -132,15 +147,18 @@ final class MedicalReportService {
             )
     }
 
-    // MARK: Delete Report (DB + Storage)
-    func deleteReport(_ report: MedicalReport) async throws {
+    func deleteReport(_ report: MedicalReport, requestingUserId: UUID) async throws {
+        
+        
+        if report.uploadedBy != requestingUserId {
 
-        // 1️⃣ Delete file from Storage
+            throw MedicalReportError.deleteFailed
+        }
+
         try await supabase.storage
             .from("medical-reports")
             .remove(paths: [report.filePath])
 
-        // 2️⃣ Delete metadata from DB
         let response = try await supabase
             .from("medical_reports")
             .delete()

@@ -13,6 +13,8 @@ struct UploadMedicalReportScene: View {
     
     // MARK: - Inputs
     let userId: UUID
+    var uploaderId: UUID? // Defaults to userId if nil
+    var doctorId: UUID?   // Sent if uploading as doctor
     var onUploadSuccess: () -> Void
     
     @Environment(\.dismiss) private var dismiss
@@ -193,7 +195,7 @@ struct UploadMedicalReportScene: View {
             self.errorMessage = "Could not read file: \(error.localizedDescription)"
         }
     }
-    
+
     private func uploadReport() async {
         guard let category = selectedCategory,
               let data = fileData,
@@ -207,6 +209,8 @@ struct UploadMedicalReportScene: View {
         do {
             try await MedicalReportService.shared.uploadReport(
                 userId: userId,
+                uploadedBy: uploaderId ?? userId, 
+                doctorId: doctorId,
                 title: title,
                 description: finalDescription,
                 fileData: data,

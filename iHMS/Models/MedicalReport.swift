@@ -20,6 +20,15 @@ struct MedicalReport: Codable, Identifiable {
     let description: String?
     let createdAt: Date
 
+    var doctor: PartialStaff?
+
+    struct PartialStaff: Codable {
+        let fullName: String
+        enum CodingKeys: String, CodingKey {
+            case fullName = "full_name"
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
@@ -30,6 +39,7 @@ struct MedicalReport: Codable, Identifiable {
         case title
         case description
         case createdAt = "created_at"
+        case doctor = "staff"
     }
 }
 

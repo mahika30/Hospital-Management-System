@@ -264,7 +264,6 @@ struct PatientProfileView: View {
                 address: patient.address
             )
             
-            // Reload patient data after save
             await viewModel.loadDashboardData(authVM: authVM)
             loadInitialValues()
 
