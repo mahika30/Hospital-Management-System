@@ -305,6 +305,7 @@
 				INFOPLIST_FILE = iHMS/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to scan patient QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to securely sign you in without passwords.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "iHMS needs access to Reminders to set appointment reminders for you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -343,6 +344,7 @@
 				INFOPLIST_FILE = iHMS/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to scan patient QR codes.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to securely sign you in without passwords.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "iHMS needs access to Reminders to set appointment reminders for you.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

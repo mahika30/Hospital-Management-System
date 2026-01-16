@@ -76,7 +76,7 @@ struct Appointment: Identifiable, Codable, Hashable {
     var appointmentStatus: AppointmentStatus {
         AppointmentStatus(rawValue: status) ?? .scheduled
     }
-    private var parsedDate: Date? {
+    var parsedDate: Date? {
         // Try ISO8601 with various formats
         let isoFormatter = ISO8601DateFormatter()
         

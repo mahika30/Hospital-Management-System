@@ -113,7 +113,7 @@ struct TodayAppointmentRow: View {
                             .fontWeight(.medium)
                     }
                     
-                    Text(appointment.appointmentStatus.displayName)
+                    Text(statusText)
                         .font(.caption)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)
@@ -127,7 +127,36 @@ struct TodayAppointmentRow: View {
         .padding(.vertical, 4)
     }
     
+    var isMissed: Bool {
+        guard appointment.appointmentStatus != .completed &&
+              appointment.appointmentStatus != .cancelled,
+              let slot = appointment.timeSlot else { return false }
+        
+        // Parse time string "HH:mm:ss"
+        let components = slot.endTime.split(separator: ":")
+        guard components.count >= 2,
+              let endHour = Int(components[0]),
+              let endMinute = Int(components[1]) else { return false }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        let currentHour = calendar.component(.hour, from: now)
+        let currentMinute = calendar.component(.minute, from: now)
+        
+        // Strict comparison: if current time > end time
+        if currentHour > endHour { return true }
+        if currentHour == endHour && currentMinute > endMinute { return true }
+        
+        return false
+    }
+    
+    private var statusText: String {
+        if isMissed { return "Missed" }
+        return appointment.appointmentStatus.displayName
+    }
+    
     private var statusColor: Color {
+        if isMissed { return .red }
         switch appointment.appointmentStatus {
         case .scheduled, .confirmed:
             return .blue

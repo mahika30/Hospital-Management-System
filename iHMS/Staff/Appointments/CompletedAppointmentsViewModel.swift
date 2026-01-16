@@ -15,7 +15,7 @@ class CompletedAppointmentsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let staffId: UUID
+    let staffId: UUID
     
     init(staffId: UUID) {
         self.staffId = staffId

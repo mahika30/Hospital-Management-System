@@ -95,14 +95,26 @@ class AdminDashboardViewModel: ObservableObject {
     func fetchFeedback() async {
         print("DEBUG: ViewModel fetchFeedback called")
         do {
-            let feedbacks = try await feedbackService.fetchRecentFeedback(limit: 5)
+            async let recentArgs = feedbackService.fetchRecentFeedback(limit: 5)
+            async let allArgs = feedbackService.fetchAllFeedback()
+            
+            let (recent, all) = try await (recentArgs, allArgs)
+            
             await MainActor.run {
-                print("DEBUG: Updating recentFeedbacks with \(feedbacks.count) items")
-                self.recentFeedbacks = feedbacks
+                print("DEBUG: Updating feedbacks - Recent: \(recent.count), All: \(all.count)")
+                self.recentFeedbacks = recent
+                self.allFeedbacks = all
             }
         } catch {
             print("Error fetching feedback: \(error)")
         }
+    }
+    
+    /// Refreshes all data on the dashboard
+    func refreshData() async {
+        await fetchDashboardStats()
+        await fetchAnalytics()
+        await fetchFeedback()
     }
     
     @MainActor
