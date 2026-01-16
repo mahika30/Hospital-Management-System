@@ -72,7 +72,7 @@ struct AdminHomeTab: View {
         }
         .background(Theme.background)
         .refreshable {
-            await dashboardVM.fetchDashboardStats()
+            await dashboardVM.refreshData()
         }
         .task {
             // Fetch real data when the tab appears
@@ -90,6 +90,13 @@ struct AdminHomeTab: View {
                     .foregroundColor(Theme.primaryText)
 
                 Spacer()
+                
+                NavigationLink(destination: FeedbackListView(feedbacks: dashboardVM.allFeedbacks)) {
+                    Text("See All")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(Theme.accent)
+                }
             }
 
             VStack(spacing: 12) {
@@ -97,7 +104,6 @@ struct AdminHomeTab: View {
                     FeedbackCardView(item: item)
                 }
             }
-            .comingSoon() // Apply Coming Soon overlay only to the content
         }
         .padding(.horizontal)
     }

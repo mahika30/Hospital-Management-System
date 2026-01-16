@@ -12,64 +12,61 @@ struct SignupView: View {
     @State private var dateOfBirth = Date()
     @State private var gender: Gender = .male
 
+    private var isSignupDisabled: Bool {
+        authVM.isLoading ||
+        email.isEmpty ||
+        password.isEmpty ||
+        fullName.isEmpty
+    }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack {
-                Spacer(minLength: 30)
+            VStack(spacing: 32) {
 
-                VStack(spacing: 20) {
+                Spacer(minLength: 40)
 
-                    VStack(spacing: 6) {
-                        Text("Create Account")
-                            .font(.largeTitle.bold())
+                // MARK: - Header
+                VStack(spacing: 8) {
+                    Text("Create your account")
+                        .font(.largeTitle.weight(.semibold))
 
-                        Text("Join iHMS to manage your health")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Set up your iHMS profile")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-                    VStack(spacing: 14) {
+                // MARK: - Card
+                VStack(spacing: 16) {
 
-                        TextField("Full Name", text: $fullName)
+                    Group {
+                        TextField("Full name", text: $fullName)
                             .textContentType(.name)
-                            .padding()
-                            .background(
-                                .ultraThinMaterial,
-                                in: RoundedRectangle(cornerRadius: 14)
-                            )
 
-                        TextField("Email", text: $email)
+                        TextField("Email address", text: $email)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .textContentType(.emailAddress)
-                            .padding()
-                            .background(
-                                .ultraThinMaterial,
-                                in: RoundedRectangle(cornerRadius: 14)
-                            )
 
                         SecureField("Password", text: $password)
                             .textContentType(.newPassword)
-                            .padding()
-                            .background(
-                                .ultraThinMaterial,
-                                in: RoundedRectangle(cornerRadius: 14)
-                            )
 
-                        TextField("Phone Number", text: $phoneNumber)
+                        TextField("Phone number (optional)", text: $phoneNumber)
                             .keyboardType(.phonePad)
                             .textContentType(.telephoneNumber)
-                            .padding()
-                            .background(
-                                .ultraThinMaterial,
-                                in: RoundedRectangle(cornerRadius: 14)
-                            )
                     }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(uiColor: .separator).opacity(0.25))
+                    )
 
-                    HStack(spacing: 12) {
-
-                        Text("Date of Birth")
-                            .font(.footnote)
+                    // Date of Birth
+                    HStack {
+                        Text("Date of birth")
                             .foregroundStyle(.secondary)
 
                         Spacer()
@@ -82,13 +79,17 @@ struct SignupView: View {
                         )
                         .labelsHidden()
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 14)
+                    .padding()
                     .background(
-                        .ultraThinMaterial,
-                        in: RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color(uiColor: .tertiarySystemBackground))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(uiColor: .separator).opacity(0.25))
                     )
 
+                    // Gender
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Gender")
                             .font(.footnote)
@@ -101,77 +102,65 @@ struct SignupView: View {
                         }
                         .pickerStyle(.segmented)
                     }
-
-                    Button {
-                        Task {
-                            await authVM.signUp(
-                                email: email,
-                                password: password,
-                                fullName: fullName,
-                                phoneNumber: phoneNumber.isEmpty ? nil : phoneNumber,
-                                dateOfBirth: dateOfBirth,
-                                gender: gender
-                            )
-                        }
-                    } label: {
-                        HStack {
-                            if authVM.isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Create Account")
-                                    .font(.headline)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                    }
-                    .background(
-                        LinearGradient(
-                            colors: [.teal, .mint],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        in: RoundedRectangle(cornerRadius: 16)
-                    )
-                    .foregroundColor(.white)
-                    .disabled(authVM.isLoading)
-
-                    if let error = authVM.errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    Button {
-                        onSwitchToLogin()
-                    } label: {
-                        Text("Already have an account? Login")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
                 }
-                .padding(24)
+                .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 28)
-                        .fill(.thinMaterial)
+                        .fill(Color(uiColor: .secondarySystemBackground))
                 )
-                .padding(.horizontal)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color(uiColor: .separator).opacity(0.3))
+                )
+
+                // MARK: - Primary Action
+                Button {
+                    Task {
+                        await authVM.signUp(
+                            email: email,
+                            password: password,
+                            fullName: fullName,
+                            phoneNumber: phoneNumber.isEmpty ? nil : phoneNumber,
+                            dateOfBirth: dateOfBirth,
+                            gender: gender
+                        )
+                    }
+                } label: {
+                    HStack {
+                        if authVM.isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Create Account")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(isSignupDisabled ? .gray : .accentColor)
+                .disabled(isSignupDisabled)
+
+                // MARK: - Error
+                if let error = authVM.errorMessage {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                }
+
+                // MARK: - Secondary Action
+                Button("Already have an account? Sign in") {
+                    onSwitchToLogin()
+                }
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
 
                 Spacer(minLength: 40)
             }
+            .padding()
         }
-        .background {
-            LinearGradient(
-                colors: [
-                    Color.teal.opacity(0.18),
-                    Color.clear
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
+        .background(Color(uiColor: .systemBackground))
+        .animation(.easeInOut, value: authVM.isLoading)
     }
 }

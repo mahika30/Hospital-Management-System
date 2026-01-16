@@ -16,13 +16,13 @@ struct AnalyticsView: View {
                 
                 Spacer()
                 
-             
+                // Date Range Filter Menu
                 Menu {
                     ForEach(DateRange.allCases) { range in
                         Button(action: {
                             withAnimation {
                                 viewModel.selectedDateRange = range
-                                viewModel.updateAnalytics(range: range)
+                                // Fetch is triggered by didSet in ViewModel
                             }
                         }) {
                             HStack {
@@ -50,34 +50,37 @@ struct AnalyticsView: View {
             }
             .padding(.horizontal)
             
-         
+            // Swipeable Charts
             TabView(selection: $selectedTab) {
-                AnalyticsChartCard(title: "Revenue", data: viewModel.revenueData, color: .white, isCurrency: true)
-                    .comingSoon()
-                    .padding(.horizontal) // Padding needed here since comingSoon clips bounds, and original had padding inside card or outside. Let's check AnalyticsChartCard padding.
-                    .tag(0)
                 
-                AnalyticsChartCard(title: "Footfall", data: viewModel.footfallData, color: .white, isCurrency: false)
-                    .comingSoon()
-                    .padding(.horizontal)
-                    .tag(1)
+                // 1. Patient Footfall (Line Graph)
+                AnalyticsLineChartCard(
+                    title: "Patient Footfall",
+                    data: viewModel.footfallData,
+                    color: .blue
+                )
+                .padding(.horizontal)
+                .tag(0)
                 
-                AnalyticsChartCard(title: "Appointments", data: viewModel.revenueData, color: .white, isCurrency: false) // Reusing mock data for demo
-                    .comingSoon()
-                    .padding(.horizontal)
-                    .tag(2)
+                // 2. Busiest Doctor (Line Graph)
+                AnalyticsDoctorLineChartCard(
+                    title: "Busiest Doctor",
+                    data: viewModel.busiestDoctorData,
+                    color: .purple
+                )
+                .padding(.horizontal)
+                .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
-            .frame(height: 300)
+            .frame(height: 320)
         }
     }
 }
 
-struct AnalyticsChartCard: View {
+struct AnalyticsLineChartCard: View {
     let title: String
     let data: [AnalyticsData]
     let color: Color
-    let isCurrency: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -87,50 +90,120 @@ struct AnalyticsChartCard: View {
             
             if data.isEmpty {
                 Spacer()
-                Text("No data available")
+                Text("No data for this period")
                     .foregroundColor(Theme.secondaryText)
+                    .frame(maxWidth: .infinity)
                 Spacer()
             } else {
                 Chart {
                     ForEach(data) { item in
                         LineMark(
                             x: .value("Date", item.date),
-                            y: .value("Value", item.value)
+                            y: .value("Count", item.value)
                         )
-                        .foregroundStyle(color)
+                        .foregroundStyle(color.gradient)
                         .interpolationMethod(.catmullRom)
                         .symbol {
                             Circle()
                                 .fill(color)
                                 .frame(width: 8, height: 8)
                         }
+                        
+                        AreaMark(
+                            x: .value("Date", item.date),
+                            y: .value("Count", item.value)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [color.opacity(0.3), color.opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .interpolationMethod(.catmullRom)
                     }
                 }
+                .padding(.vertical, 10)
+                .chartYScale(domain: .automatic(includesZero: false))
                 .chartYAxis {
-                    AxisMarks(position: .leading, values: .automatic) { value in
+                    AxisMarks(position: .leading, values: .automatic) { _ in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4])).foregroundStyle(Theme.gridLine)
-                        AxisValueLabel() {
-                            if let intValue = value.as(Int.self) {
-                                Text("\(isCurrency ? "$" : "")\(intValue)")
-                                    .foregroundColor(Theme.secondaryText)
-                                    .font(.caption)
-                            } else if let doubleValue = value.as(Double.self) {
-                                Text("\(isCurrency ? "$" : "")\(Int(doubleValue))")
-                                    .foregroundColor(Theme.secondaryText)
-                                    .font(.caption)
-                            }
-                        }
+                        AxisValueLabel().foregroundStyle(Theme.secondaryText)
                     }
                 }
                 .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
+                    AxisMarks(values: .automatic) { _ in
                         AxisGridLine(centered: true, stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Theme.gridLine)
                         AxisValueLabel(format: .dateTime.day().month(), centered: true)
                             .foregroundStyle(Theme.secondaryText)
                     }
                 }
-                .chartBackground { proxy in
-                     Theme.surface
+            }
+        }
+        .padding(20)
+        .background(Theme.surface)
+        .cornerRadius(Theme.cornerRadius)
+    }
+}
+
+struct AnalyticsDoctorLineChartCard: View {
+    let title: String
+    let data: [BarChartData]
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(Theme.primaryText)
+            
+            if data.isEmpty {
+                Spacer()
+                Text("No data for this period")
+                    .foregroundColor(Theme.secondaryText)
+                    .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                Chart {
+                    ForEach(data) { item in
+                        LineMark(
+                            x: .value("Doctor", item.label),
+                            y: .value("Appointments", item.value)
+                        )
+                        .foregroundStyle(color.gradient)
+                        .interpolationMethod(.catmullRom)
+                        .symbol {
+                            Circle()
+                                .fill(color)
+                                .frame(width: 8, height: 8)
+                        }
+                        
+                        AreaMark(
+                            x: .value("Doctor", item.label),
+                            y: .value("Appointments", item.value)
+                        )
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [color.opacity(0.3), color.opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+                .padding(.vertical, 10)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic) { _ in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4])).foregroundStyle(Theme.gridLine)
+                        AxisValueLabel().foregroundStyle(Theme.secondaryText)
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks { _ in
+                        AxisValueLabel()
+                            .foregroundStyle(Theme.secondaryText)
+                    }
                 }
             }
         }

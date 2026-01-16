@@ -168,24 +168,26 @@ final class PatientSearchViewModel {
             }
         }
         
+        // Apply sorting
         result.sort { patient1, patient2 in
             switch selectedSortOption {
             case .nameAsc:
-                return patient1.fullName < patient2.fullName
+                return patient1.fullName.lowercased() < patient2.fullName.lowercased()
             case .nameDesc:
-                return patient1.fullName > patient2.fullName
+                return patient1.fullName.lowercased() > patient2.fullName.lowercased()
             case .dateAsc:
-                let date1 = patient1.createdAt ?? Date.distantPast
-                let date2 = patient2.createdAt ?? Date.distantPast
+                let date1 = patient1.createdDate ?? Date.distantPast
+                let date2 = patient2.createdDate ?? Date.distantPast
                 return date1 < date2
             case .dateDesc:
-                let date1 = patient1.createdAt ?? Date.distantPast
-                let date2 = patient2.createdAt ?? Date.distantPast
+                let date1 = patient1.createdDate ?? Date.distantPast
+                let date2 = patient2.createdDate ?? Date.distantPast
                 return date1 > date2
             }
         }
         
         filteredPatients = result
+        print("📊 Filtered \(result.count) patients with sort: \(selectedSortOption.rawValue)")
     }
     
     func clearFilters() {
@@ -223,8 +225,8 @@ final class PatientSearchViewModel {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
-                dischargeDate: patient.dischargeDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
+                dischargeDate: patient.dischargeDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,
@@ -299,7 +301,7 @@ final class PatientSearchViewModel {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,
@@ -322,11 +324,20 @@ final class PatientSearchViewModel {
     
     func getPatientAppointments(_ patientId: UUID) async -> [Appointment] {
         do {
+            // Get current staff ID
+            guard let staffId = try? await SupabaseManager.shared.client.auth.session.user.id else {
+                print("❌ Unable to get staff ID")
+                return []
+            }
+            
+            print("🔍 Loading appointments for patient: \(patientId) and staff: \(staffId)")
+            
             let response: [Appointment] = try await SupabaseManager.shared.client
                 .from("appointments")
                 .select("""
                     *,
                     time_slots:time_slot_id(
+                        id,
                         start_time,
                         end_time,
                         slot_date
@@ -334,15 +345,21 @@ final class PatientSearchViewModel {
                     staff:staff_id(
                         id,
                         full_name,
+                        email,
                         designation,
                         specialization
                     )
                 """)
                 .eq("patient_id", value: patientId.uuidString)
+                .eq("staff_id", value: staffId.uuidString)
                 .order("appointment_date", ascending: false)
                 .execute()
                 .value
             
+            print("✅ Loaded \(response.count) appointments for patient")
+            for apt in response {
+                print("   - Date: \(apt.appointmentDate), Status: \(apt.status)")
+            }
             return response
         } catch {
             print("❌ Error loading patient appointments: \(error)")

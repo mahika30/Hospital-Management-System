@@ -9,41 +9,69 @@ struct PatientDetailView: View {
     
     @State private var appointments: [Appointment] = []
     @State private var isLoadingAppointments = false
+    @State private var currentStaffId: UUID?
+    @State private var showMedicalReports = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Patient Header
                 PatientHeaderSection(patient: patient)
-                
-                // Quick Stats
                 QuickStatsSection(patient: patient, appointments: appointments)
-                
-                // Medical Information
-                if patient.allergies != nil || patient.currentMedications != nil || patient.medicalHistory != nil {
-                    MedicalInformationSection(patient: patient)
+     
+                VStack(spacing: 12) {
+                    ExpandableMedicalHistoryCard(patient: patient)
+                    
+                    Button {
+                        showMedicalReports = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "folder.fill")
+                            Text("View Medical Reports")
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                    }
                 }
                 
-                // Contact Information
                 ContactInformationSection(patient: patient)
-                
-                // Admission Information
+            
                 if patient.admissionStatus != nil {
                     AdmissionInformationSection(patient: patient)
                 }
-                
-                // Recent Appointments
-                RecentAppointmentsSection(
-                    appointments: appointments,
-                    isLoading: isLoadingAppointments
-                )
+                if let staffId = currentStaffId {
+                    RecentAppointmentsSection(
+                        appointments: appointments,
+                        isLoading: isLoadingAppointments,
+                        patient: patient,
+                        staffId: staffId
+                    )
+                }
             }
             .padding()
+        }
+        .sheet(isPresented: $showMedicalReports) {
+            if let staffId = currentStaffId {
+                MedicalReportsScene(userId: patient.id, currentUserId: staffId)
+            } else {
+                ProgressView()
+            }
         }
         .navigationTitle("Patient Details")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            await loadCurrentUser()
             await loadAppointments()
+        }
+    }
+    
+    
+    private func loadCurrentUser() async {
+        if let user = try? await SupabaseManager.shared.client.auth.session.user {
+            currentStaffId = user.id
         }
     }
     
@@ -54,7 +82,6 @@ struct PatientDetailView: View {
     }
 }
 
-// MARK: - Patient Header Section
 private struct PatientHeaderSection: View {
     let patient: Patient
     
@@ -76,7 +103,6 @@ private struct PatientHeaderSection: View {
                         .foregroundStyle(.white)
                 }
             
-            // Name and MRN
             VStack(spacing: 4) {
                 Text(patient.fullName)
                     .font(.title2)
@@ -89,7 +115,6 @@ private struct PatientHeaderSection: View {
                 }
             }
             
-            // Status Badge
             if let admissionStatus = patient.admissionStatus,
                let status = AdmissionStatus(rawValue: admissionStatus) {
                 HStack(spacing: 6) {
@@ -126,7 +151,6 @@ private struct PatientHeaderSection: View {
     }
 }
 
-// MARK: - Quick Stats Section
 private struct QuickStatsSection: View {
     let patient: Patient
     let appointments: [Appointment]
@@ -151,8 +175,9 @@ private struct QuickStatsSection: View {
                     color: .purple
                 )
                 
-                if let admissionDate = patient.admissionDate,
-                   patient.admissionStatus == "admitted" {
+                if let admissionDateString = patient.admissionDate,
+                   patient.admissionStatus == "admitted",
+                   let admissionDate = ISO8601DateFormatter().date(from: admissionDateString) {
                     let days = Calendar.current.dateComponents([.day], from: admissionDate, to: Date()).day ?? 0
                     QuickStatCard(
                         icon: "bed.double",
@@ -196,58 +221,7 @@ private struct QuickStatCard: View {
     }
 }
 
-// MARK: - Medical Information Section
-private struct MedicalInformationSection: View {
-    let patient: Patient
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Medical Information")
-                .font(.headline)
-            
-            VStack(spacing: 12) {
-                if let allergies = patient.allergies, !allergies.isEmpty {
-                    InfoRow(
-                        icon: "exclamationmark.triangle.fill",
-                        label: "Allergies",
-                        value: allergies.joined(separator: ", "),
-                        color: .red
-                    )
-                }
-                
-                if let medications = patient.currentMedications, !medications.isEmpty {
-                    InfoRow(
-                        icon: "pills.fill",
-                        label: "Current Medications",
-                        value: medications.joined(separator: ", "),
-                        color: .blue
-                    )
-                }
-                
-                if let history = patient.medicalHistory, !history.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Medical History", systemImage: "doc.text.fill")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.purple)
-                        
-                        Text(history)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.purple.opacity(0.1))
-                    )
-                }
-            }
-        }
-    }
-}
 
-// MARK: - Contact Information Section
 private struct ContactInformationSection: View {
     let patient: Patient
     
@@ -320,7 +294,8 @@ private struct AdmissionInformationSection: View {
                 .font(.headline)
             
             VStack(spacing: 12) {
-                if let admissionDate = patient.admissionDate {
+                if let admissionDateString = patient.admissionDate,
+                   let admissionDate = ISO8601DateFormatter().date(from: admissionDateString) {
                     InfoRow(
                         icon: "calendar.badge.plus",
                         label: "Admission Date",
@@ -329,7 +304,8 @@ private struct AdmissionInformationSection: View {
                     )
                 }
                 
-                if let dischargeDate = patient.dischargeDate {
+                if let dischargeDateString = patient.dischargeDate,
+                   let dischargeDate = ISO8601DateFormatter().date(from: dischargeDateString) {
                     InfoRow(
                         icon: "calendar.badge.checkmark",
                         label: "Discharge Date",
@@ -351,10 +327,11 @@ private struct AdmissionInformationSection: View {
     }
 }
 
-// MARK: - Recent Appointments Section
 private struct RecentAppointmentsSection: View {
     let appointments: [Appointment]
     let isLoading: Bool
+    let patient: Patient
+    let staffId: UUID
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -374,7 +351,15 @@ private struct RecentAppointmentsSection: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(appointments.prefix(5)) { appointment in
-                        AppointmentRow(appointment: appointment)
+                        NavigationLink {
+                            ConsultationView(
+                                appointment: appointment,
+                                patient: patient,
+                                staffId: staffId
+                            )
+                        } label: {
+                            AppointmentRow(appointment: appointment)
+                        }
                     }
                 }
             }
@@ -382,7 +367,6 @@ private struct RecentAppointmentsSection: View {
     }
 }
 
-// MARK: - Appointment Row
 private struct AppointmentRow: View {
     let appointment: Appointment
     
@@ -428,6 +412,8 @@ private struct AppointmentRow: View {
             return .blue
         case .confirmed:
             return .green
+        case .inProgress:
+            return .orange
         case .completed:
             return .gray
         case .cancelled:

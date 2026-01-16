@@ -36,6 +36,35 @@ class AvailabilityViewModel {
         formatter.dateFormat = "EEEE"
         return formatter.string(from: selectedDate)
     }
+    
+    var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: selectedDate)
+    }
+    
+    var daysInMonth: [Date] {
+        let calendar = Calendar.current
+        let interval = calendar.dateInterval(of: .month, for: selectedDate)!
+        let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day!
+        return (0..<days).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: interval.start)
+        }
+    }
+    
+    func previousMonth() {
+        let calendar = Calendar.current
+        if let newDate = calendar.date(byAdding: .month, value: -1, to: selectedDate) {
+            selectedDate = newDate
+        }
+    }
+    
+    func nextMonth() {
+        let calendar = Calendar.current
+        if let newDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) {
+            selectedDate = newDate
+        }
+    }
 
     private let supabase = SupabaseManager.shared.client
 
@@ -108,7 +137,8 @@ class AvailabilityViewModel {
             let today = Date()
 
             if let lastSlot = response.first,
-               let lastSlotDate = parseDate(lastSlot.slotDate) {
+               let slotDateString = lastSlot.slotDate,
+               let lastSlotDate = parseDate(slotDateString) {
 
                 let daysDifference = Calendar.current.dateComponents(
                     [.day],
@@ -205,7 +235,7 @@ class AvailabilityViewModel {
     }
     
     func adjustDelay(_ slot: TimeSlot, by minutes: Int) async {
-        let newDelay = max(0, slot.delayMinutes + minutes)
+        let newDelay = max(0, (slot.delayMinutes ?? 0) + minutes)
         
         struct Payload: Encodable {
             let delay_minutes: Int

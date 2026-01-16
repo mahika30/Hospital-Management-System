@@ -15,7 +15,7 @@ class CompletedAppointmentsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let staffId: UUID
+    let staffId: UUID
     
     init(staffId: UUID) {
         self.staffId = staffId
@@ -30,7 +30,7 @@ class CompletedAppointmentsViewModel: ObservableObject {
                 .from("appointments")
                 .select("""
                     *,
-                    patient:patient_id (
+                    patients!inner(
                         id,
                         full_name,
                         email,
@@ -38,6 +38,11 @@ class CompletedAppointmentsViewModel: ObservableObject {
                         date_of_birth,
                         blood_group,
                         phone_number
+                    ),
+                    time_slots(
+                        id,
+                        start_time,
+                        end_time
                     )
                 """)
                 .eq("staff_id", value: staffId.uuidString)
@@ -46,10 +51,15 @@ class CompletedAppointmentsViewModel: ObservableObject {
                 .execute()
                 .value
             
+            print("✅ Loaded \(appointments.count) completed appointments")
+            for apt in appointments {
+                print("   - Patient: \(apt.patient?.fullName ?? "nil")")
+            }
+            
             self.appointments = appointments
         } catch {
             errorMessage = "Failed to load completed appointments: \(error.localizedDescription)"
-            print("Error loading completed appointments: \(error)")
+            print("❌ Error loading completed appointments: \(error)")
         }
         
         isLoading = false

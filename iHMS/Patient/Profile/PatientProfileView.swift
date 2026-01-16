@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PatientProfileView: View {
     @ObservedObject var viewModel: PatientViewModel
+    @State private var selectedPatientForHistory: Patient?
+
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
 
@@ -13,18 +15,22 @@ struct PatientProfileView: View {
     @State private var phoneNumber = ""
     @State private var gender = ""
     @State private var bloodGroup = ""
+    
+    @State private var showingMedicalHistory = false
 
     var body: some View {
         ZStack {
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 28) {
+                VStack(spacing: 20) {
 
                     profileCard
 
                     personalInfoCard
+                    
 
-                    medicalInfoCard
 
                     logoutButton
                 }
@@ -36,6 +42,7 @@ struct PatientProfileView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Close") { dismiss() }
+                    .foregroundColor(.accentColor)
             }
 
             ToolbarItem(placement: .topBarTrailing) {
@@ -46,6 +53,7 @@ struct PatientProfileView: View {
                         isEditing = true
                     }
                 }
+                .foregroundColor(.accentColor)
                 .disabled(isSaving)
             }
         }
@@ -53,16 +61,17 @@ struct PatientProfileView: View {
             loadInitialValues()
         }
     }
+
     private var profileCard: some View {
         VStack(spacing: 16) {
             Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 70))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.accentColor)
 
             Text(fullName)
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
 
             HStack(spacing: 12) {
                 pill("Age", "\(viewModel.age)")
@@ -73,16 +82,13 @@ struct PatientProfileView: View {
         .frame(maxWidth: .infinity)
         .padding(26)
         .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.08, green: 0.25, blue: 0.45),
-                    Color.black
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemGroupedBackground))
         )
-        .cornerRadius(30)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color(.separator), lineWidth: 0.5)
+        )
     }
 
     private var personalInfoCard: some View {
@@ -94,6 +100,36 @@ struct PatientProfileView: View {
             infoRow(title: "Phone Number", text: $phoneNumber)
             infoRow(title: "Gender", text: $gender)
             infoRow(title: "Blood Group", text: $bloodGroup)
+            
+            Divider()
+            
+            NavigationLink {
+                if let patient = viewModel.patient {
+                    UpdateMedicalHistoryView(patient: patient) { updatedPatient in
+                        try await viewModel.updateMedicalHistory(
+                            medicalHistory: updatedPatient.medicalHistory,
+                            allergies: updatedPatient.allergies,
+                            currentMedications: updatedPatient.currentMedications
+                        )
+
+                    }
+                }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Medical History")
+                            .font(.headline)
+                        Text("Chronic diseases, allergies, medications")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                }
+                .padding(.vertical, 4)
+            }
+
 
             if let errorMessage {
                 Text(errorMessage)
@@ -102,23 +138,19 @@ struct PatientProfileView: View {
             }
         }
         .padding()
-        .background(Color.black)
-        .cornerRadius(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5)
+        )
     }
 
-    private var medicalInfoCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
 
-            sectionTitle("Medical Information")
+    
 
-            readOnlyChip("Blood Test Report")
-            readOnlyChip("MRI Scan")
-            readOnlyChip("Paracetamol – 5 days")
-        }
-        .padding()
-        .background(Color.black)
-        .cornerRadius(20)
-    }
 
     private var logoutButton: some View {
         Button {
@@ -132,8 +164,14 @@ struct PatientProfileView: View {
             .foregroundColor(.red)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(18)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(.separator), lineWidth: 0.5)
+            )
         }
     }
 
@@ -142,55 +180,54 @@ struct PatientProfileView: View {
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
             .font(.headline)
-            .foregroundColor(.white)
+            .foregroundColor(.primary)
     }
 
     private func pill(_ title: String, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(title)
                 .font(.caption2)
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.15))
-        .cornerRadius(16)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.tertiarySystemGroupedBackground))
+        )
     }
 
     private func infoRow(title: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
 
             if isEditing {
                 TextField(title, text: text)
+                    .textFieldStyle(.plain)
                     .padding()
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(12)
-                    .foregroundColor(.white)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.tertiarySystemGroupedBackground))
+                    )
+                    .foregroundColor(.primary)
+                    .autocorrectionDisabled()
             } else {
                 Text(text.wrappedValue.isEmpty ? "-" : text.wrappedValue)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.tertiarySystemGroupedBackground))
+                    )
             }
         }
-    }
-
-    private func readOnlyChip(_ text: String) -> some View {
-        Text(text)
-            .foregroundColor(.white)
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(12)
     }
 
     private func loadInitialValues() {
@@ -219,14 +256,17 @@ struct PatientProfileView: View {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
-                dischargeDate: patient.dischargeDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
+                dischargeDate: patient.dischargeDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,
                 medicalRecordNumber: patient.medicalRecordNumber,
                 address: patient.address
             )
+            
+            await viewModel.loadDashboardData(authVM: authVM)
+            loadInitialValues()
 
             isEditing = false
         } catch {

@@ -40,7 +40,8 @@ class PastAppointmentsViewModel: ObservableObject {
                         email,
                         designation,
                         specialization
-                    )
+                    ),
+                    time_slots:time_slot_id (*)
                 """)
                 .eq("patient_id", value: patientId.uuidString)
                 .or("appointment_date.lt.\(dateFormatter.string(from: today)),status.eq.completed,status.eq.cancelled")

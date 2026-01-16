@@ -4,6 +4,7 @@ import SwiftUI
 enum AppointmentStatus: String, Codable, CaseIterable {
     case scheduled = "scheduled"
     case confirmed = "confirmed"
+    case inProgress = "in_progress"
     case completed = "completed"
     case cancelled = "cancelled"
     case noShow = "noShow"
@@ -13,6 +14,7 @@ enum AppointmentStatus: String, Codable, CaseIterable {
         switch self {
         case .scheduled: return "Scheduled"
         case .confirmed: return "Confirmed"
+        case .inProgress: return "In Progress"
         case .completed: return "Completed"
         case .cancelled: return "Cancelled"
         case .noShow: return "No Show"
@@ -24,6 +26,7 @@ enum AppointmentStatus: String, Codable, CaseIterable {
         switch self {
         case .scheduled: return .blue
         case .confirmed: return .green
+        case .inProgress: return .orange
         case .completed: return .gray
         case .cancelled: return .red
         case .noShow: return .orange
@@ -73,7 +76,7 @@ struct Appointment: Identifiable, Codable, Hashable {
     var appointmentStatus: AppointmentStatus {
         AppointmentStatus(rawValue: status) ?? .scheduled
     }
-    private var parsedDate: Date? {
+    var parsedDate: Date? {
         // Try ISO8601 with various formats
         let isoFormatter = ISO8601DateFormatter()
         
