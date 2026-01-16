@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct FeedbackCardView: View {
-    let item: FeedbackItem
+    let item: Feedback
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(item.userName)
+                Text(item.patient?.fullName ?? "Anonymous")
                     .font(.headline)
                     .foregroundColor(Theme.primaryText)
                 
@@ -21,11 +21,13 @@ struct FeedbackCardView: View {
                 }
             }
             
-            Text(item.feedbackText)
-                .font(.subheadline)
-                .foregroundColor(Theme.secondaryText)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
+            if let comments = item.comments {
+                Text(comments)
+                    .font(.subheadline)
+                    .foregroundColor(Theme.secondaryText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
         }
         .padding()
         .background(Theme.surface)

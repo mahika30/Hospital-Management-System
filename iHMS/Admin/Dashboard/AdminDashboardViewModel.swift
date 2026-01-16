@@ -33,13 +33,7 @@ struct AnalyticsData: Identifiable {
     let value: Double
 }
 
-struct FeedbackItem: Identifiable {
-    let id = UUID()
-    let userName: String
-    let feedbackText: String
-    let rating: Int
-    let date: Date
-}
+
 
 
 enum StatsTimeRange: String, CaseIterable, Identifiable {
@@ -72,6 +66,7 @@ class AdminDashboardViewModel: ObservableObject {
     // Services
     private let patientService = PatientService()
     private let appointmentService = AppointmentService()
+    private let feedbackService = FeedbackService()
     
     // Analytics
     @Published var selectedDateRange: DateRange = .week {
@@ -86,18 +81,29 @@ class AdminDashboardViewModel: ObservableObject {
     @Published var busiestDoctorData: [BarChartData] = []
     
     // Feedback
-    @Published var recentFeedbacks: [FeedbackItem] = []
-    @Published var allFeedbacks: [FeedbackItem] = []
+    @Published var recentFeedbacks: [Feedback] = []
+    @Published var allFeedbacks: [Feedback] = []
     
     init() {
         Task {
             await fetchDashboardStats()
             await fetchAnalytics()
+            await fetchFeedback()
         }
-        generateFeedbackData()
     }
     
-    // MARK: - Dashboard Stats (Summary Tiles)
+    func fetchFeedback() async {
+        print("DEBUG: ViewModel fetchFeedback called")
+        do {
+            let feedbacks = try await feedbackService.fetchRecentFeedback(limit: 5)
+            await MainActor.run {
+                print("DEBUG: Updating recentFeedbacks with \(feedbacks.count) items")
+                self.recentFeedbacks = feedbacks
+            }
+        } catch {
+            print("Error fetching feedback: \(error)")
+        }
+    }
     
     @MainActor
     func fetchDashboardStats() async {
@@ -297,29 +303,5 @@ class AdminDashboardViewModel: ObservableObject {
         return Array(finalData.prefix(5))
     }
     
-    func generateFeedbackData() {
-        // ... (mock feedback logic same as before, reducing redundancy in prompt)
-         let names = ["Alice Johnson", "Bob Smith", "Charlie Brown", "Diana Prince", "Evan Wright"]
-        let comments = [
-            "Great service, very polite staff.",
-            "Waiting time was a bit long.",
-            "Doctor was extremely helpful explaining things.",
-            "Clean facilities and good vibes.",
-            "App appointment system is smooth."
-        ]
-        
-        var generated: [FeedbackItem] = []
-        for i in 0..<20 {
-            let item = FeedbackItem(
-                userName: names[i % names.count],
-                feedbackText: comments[i % comments.count],
-                rating: Int.random(in: 3...5),
-                date: Date()
-            )
-            generated.append(item)
-        }
-        
-        allFeedbacks = generated
-        recentFeedbacks = Array(generated.prefix(3))
-    }
+
 }

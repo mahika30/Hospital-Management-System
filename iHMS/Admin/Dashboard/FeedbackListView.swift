@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FeedbackListView: View {
-    let feedbacks: [FeedbackItem]
+    let feedbacks: [Feedback]
     
     var body: some View {
         ScrollView {

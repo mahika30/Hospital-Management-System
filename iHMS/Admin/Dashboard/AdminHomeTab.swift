@@ -97,7 +97,6 @@ struct AdminHomeTab: View {
                     FeedbackCardView(item: item)
                 }
             }
-            .comingSoon() // Apply Coming Soon overlay only to the content
         }
         .padding(.horizontal)
     }
