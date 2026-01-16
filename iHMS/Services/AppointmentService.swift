@@ -90,6 +90,54 @@ final class AppointmentService {
         
         return count ?? 0
     }
+    func fetchAppointments(from startDate: Date, to endDate: Date) async throws -> [Appointment] {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let isoStart = formatter.string(from: startDate)
+        let isoEnd = formatter.string(from: endDate)
+        
+        // We need staff details to identify the Busiest Doctor.
+        let appointments: [Appointment] = try await SupabaseManager.shared.client
+            .from("appointments")
+            .select("""
+                *,
+                staff (
+                    *
+                )
+            """) // Join with staff to get names
+            .gte("appointment_date", value: isoStart)
+            .lte("appointment_date", value: isoEnd)
+            .execute()
+            .value
+            
+        return appointments
+    }
+    func fetchDoctorAppointments(staffId: UUID, from startDate: Date, to endDate: Date) async throws -> [Appointment] {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let isoStart = formatter.string(from: startDate)
+        let isoEnd = formatter.string(from: endDate)
+        
+        let appointments: [Appointment] = try await SupabaseManager.shared.client
+            .from("appointments")
+            .select("""
+                *,
+                patients (
+                    *
+                ),
+                time_slots (
+                    *
+                )
+            """)
+            .eq("staff_id", value: staffId.uuidString)
+            .gte("appointment_date", value: isoStart)
+            .lte("appointment_date", value: isoEnd)
+            .order("appointment_date", ascending: true)
+            .execute()
+            .value
+            
+        return appointments
+    }
 }
 
 extension AppointmentService {

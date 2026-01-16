@@ -175,8 +175,9 @@ private struct QuickStatsSection: View {
                     color: .purple
                 )
                 
-                if let admissionDate = patient.admissionDate,
-                   patient.admissionStatus == "admitted" {
+                if let admissionDateString = patient.admissionDate,
+                   patient.admissionStatus == "admitted",
+                   let admissionDate = ISO8601DateFormatter().date(from: admissionDateString) {
                     let days = Calendar.current.dateComponents([.day], from: admissionDate, to: Date()).day ?? 0
                     QuickStatCard(
                         icon: "bed.double",
@@ -293,7 +294,8 @@ private struct AdmissionInformationSection: View {
                 .font(.headline)
             
             VStack(spacing: 12) {
-                if let admissionDate = patient.admissionDate {
+                if let admissionDateString = patient.admissionDate,
+                   let admissionDate = ISO8601DateFormatter().date(from: admissionDateString) {
                     InfoRow(
                         icon: "calendar.badge.plus",
                         label: "Admission Date",
@@ -302,7 +304,8 @@ private struct AdmissionInformationSection: View {
                     )
                 }
                 
-                if let dischargeDate = patient.dischargeDate {
+                if let dischargeDateString = patient.dischargeDate,
+                   let dischargeDate = ISO8601DateFormatter().date(from: dischargeDateString) {
                     InfoRow(
                         icon: "calendar.badge.checkmark",
                         label: "Discharge Date",

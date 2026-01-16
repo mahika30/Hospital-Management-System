@@ -396,7 +396,7 @@ private struct AddPatientView: View {
                         phoneNumber: phoneNumber.isEmpty ? nil : phoneNumber,
                         dateOfBirth: dateOfBirth.ISO8601Format(),
                         gender: gender,
-                        createdAt: Date(),
+                        createdAt: Date().ISO8601Format(),
                         bloodGroup: nil
                     )
                     Task {

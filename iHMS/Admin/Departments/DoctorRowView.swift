@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DoctorRowView: View {
     let doctor: Staff
+    var onInfoTap: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 6) {
@@ -31,7 +32,15 @@ struct DoctorRowView: View {
 
             Spacer()
 
-
+            if let onInfoTap = onInfoTap {
+                Button(action: onInfoTap) {
+                    Image(systemName: "info.circle")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .padding(8)
+                }
+                .buttonStyle(BorderlessButtonStyle()) // Important for list rows
+            }
         }
         .padding(.vertical, 10)
     }

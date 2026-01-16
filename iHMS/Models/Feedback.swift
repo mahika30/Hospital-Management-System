@@ -2,8 +2,6 @@
 //  Feedback.swift
 //  iHMS
 //
-
-//  Created by Deepanshu Garg on 15/01/26.
 //
 
 import Foundation
@@ -20,7 +18,6 @@ enum FeedbackSubmitter: String, Codable {
         }
     }
 }
-
 
 /// Model representing feedback for a completed appointment
 struct Feedback: Identifiable, Codable {
@@ -43,11 +40,40 @@ struct Feedback: Identifiable, Codable {
         case rating
         case comments
         case createdAt = "created_at"
+        case patient = "patients"
+        case doctor = "staff"
     }
     
-    /// Computed property to get the submitter type
+    // Relations from joins
+    struct FeedbackPatient: Codable {
+        let fullName: String
+        
+        enum CodingKeys: String, CodingKey {
+            case fullName = "full_name"
+        }
+    }
+    
+    struct FeedbackDoctor: Codable {
+        let fullName: String
+        
+        enum CodingKeys: String, CodingKey {
+            case fullName = "full_name"
+        }
+    }
+    
+    var patient: FeedbackPatient?
+    var doctor: FeedbackDoctor?
+    
     var submitter: FeedbackSubmitter {
         FeedbackSubmitter(rawValue: submittedBy) ?? .patient
+    }
+    
+    /// Date object for filtering
+    var createdDate: Date {
+        guard let createdAtString = createdAt else { return Date.distantPast }
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return isoFormatter.date(from: createdAtString) ?? Date.distantPast
     }
     
     /// Formatted date string for display
@@ -73,4 +99,3 @@ struct Feedback: Identifiable, Codable {
         return String(repeating: "⭐️", count: rating)
     }
 }
-

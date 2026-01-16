@@ -111,6 +111,7 @@ struct PatientProfileView: View {
                             allergies: updatedPatient.allergies,
                             currentMedications: updatedPatient.currentMedications
                         )
+
                     }
                 }
             } label: {
@@ -255,8 +256,8 @@ struct PatientProfileView: View {
                 currentMedications: patient.currentMedications,
                 medicalHistory: patient.medicalHistory,
                 admissionStatus: patient.admissionStatus,
-                admissionDate: patient.admissionDate?.ISO8601Format(),
-                dischargeDate: patient.dischargeDate?.ISO8601Format(),
+                admissionDate: patient.admissionDate,
+                dischargeDate: patient.dischargeDate,
                 assignedDoctorId: patient.assignedDoctorId?.uuidString,
                 emergencyContact: patient.emergencyContact,
                 emergencyContactRelation: patient.emergencyContactRelation,

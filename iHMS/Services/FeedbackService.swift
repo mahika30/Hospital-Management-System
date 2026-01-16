@@ -2,12 +2,6 @@
 //  FeedbackService.swift
 //  iHMS
 //
-
-
-//
-//  FeedbackService.swift
-//  iHMS
-
 //  Created on 13/01/2026.
 //
 
@@ -60,10 +54,6 @@ final class FeedbackService {
     }
     
     /// Check if feedback already exists for a specific appointment and submitter
-    /// - Parameters:
-    ///   - appointmentId: The appointment ID
-    ///   - submittedBy: Who submitted the feedback
-    /// - Returns: True if feedback exists, false otherwise
     func checkFeedbackExists(
         appointmentId: UUID,
         submittedBy: FeedbackSubmitter
@@ -82,8 +72,6 @@ final class FeedbackService {
     }
     
     /// Fetch all feedback for a specific appointment
-    /// - Parameter appointmentId: The appointment ID
-    /// - Returns: Array of feedback records
     func fetchFeedbackForAppointment(appointmentId: UUID) async throws -> [Feedback] {
         
         let feedbacks: [Feedback] = try await SupabaseManager.shared.client
@@ -98,10 +86,6 @@ final class FeedbackService {
     }
     
     /// Fetch feedback submitted by a specific user for an appointment
-    /// - Parameters:
-    ///   - appointmentId: The appointment ID
-    ///   - submittedBy: The submitter type (patient or doctor)
-    /// - Returns: The feedback if it exists, nil otherwise
     func fetchFeedback(
         appointmentId: UUID,
         submittedBy: FeedbackSubmitter
@@ -120,8 +104,6 @@ final class FeedbackService {
     }
     
     /// Fetch all feedback for a specific doctor
-    /// - Parameter doctorId: The doctor's ID
-    /// - Returns: Array of feedback records
     func fetchDoctorFeedback(doctorId: UUID) async throws -> [Feedback] {
         
         let feedbacks: [Feedback] = try await SupabaseManager.shared.client
@@ -137,8 +119,6 @@ final class FeedbackService {
     }
     
     /// Calculate average rating for a doctor
-    /// - Parameter doctorId: The doctor's ID
-    /// - Returns: Average rating (0.0 if no ratings)
     func calculateAverageRating(doctorId: UUID) async throws -> Double {
         
         let feedbacks = try await fetchDoctorFeedback(doctorId: doctorId)
@@ -148,5 +128,60 @@ final class FeedbackService {
         
         let sum = ratings.reduce(0, +)
         return Double(sum) / Double(ratings.count)
+    }
+
+    /// Fetch recent feedbacks for dashboard
+    func fetchRecentFeedback(limit: Int = 5) async throws -> [Feedback] {
+        print("DEBUG: Fetching recent feedback...")
+        do {
+            let feedbacks: [Feedback] = try await SupabaseManager.shared.client
+                .from("feedbacks")
+                .select("""
+                    *,
+                    patients (
+                        full_name
+                    ),
+                    staff (
+                        full_name
+                    )
+                """)
+                .order("created_at", ascending: false)
+                .limit(limit)
+                .execute()
+                .value
+            
+            print("DEBUG: Successfully fetched \(feedbacks.count) feedbacks")
+            return feedbacks
+        } catch {
+            print("DEBUG: Error fetching recent feedback: \(error)")
+            throw error
+        }
+    }
+    
+    /// Fetch all feedbacks for the "See All" screen
+    func fetchAllFeedback() async throws -> [Feedback] {
+        print("DEBUG: Fetching all feedback...")
+        do {
+            let feedbacks: [Feedback] = try await SupabaseManager.shared.client
+                .from("feedbacks")
+                .select("""
+                    *,
+                    patients (
+                        full_name
+                    ),
+                    staff (
+                        full_name
+                    )
+                """)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+            
+            print("DEBUG: Successfully fetched \(feedbacks.count) all feedbacks")
+            return feedbacks
+        } catch {
+            print("DEBUG: Error fetching all feedback: \(error)")
+            throw error
+        }
     }
 }

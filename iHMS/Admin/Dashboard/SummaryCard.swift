@@ -19,34 +19,40 @@ struct SummaryCard: View {
                 .frame(width: 4)
 
             HStack {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
 
-                    // Icon
-                    Image(systemName: iconName)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .background(
-                            Circle()
-                                .fill(.white.opacity(0.08))
-                        )
+                    // Top Row: Icon + Percentage
+                    HStack {
+                        Image(systemName: iconName)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(
+                                Circle()
+                                    .fill(.white.opacity(0.08))
+                            )
+                        
+                        Spacer()
+                        
+                        Text(deltaText)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(accent.opacity(0.2))
+                            .cornerRadius(8)
+                    }
 
                     Spacer()
 
+                    // Bottom Row: Count + Title
                     Text("\(count)")
                         .font(.system(size: 34, weight: .bold))
                         .foregroundColor(.white)
 
-                    // Title + delta
-                    HStack(spacing: 6) {
-                        Text(title)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Theme.secondaryText)
-
-                        Text(deltaText)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(accent)
-                    }
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Theme.secondaryText)
                 }
 
                 Spacer(minLength: 6)
